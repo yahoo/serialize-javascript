@@ -4,7 +4,8 @@
   "description": "Serialize JavaScript to a superset of JSON that includes regular expressions and functions.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "benchmark": "node test/benchmark/serialize.js",
+    "test": "istanbul cover -- ./node_modules/mocha/bin/_mocha test/unit/ --reporter spec"
   },
   "repository": {
     "type": "git",
@@ -22,5 +23,12 @@
   "bugs": {
     "url": "https://github.com/yahoo/serialize-javascript/issues"
   },
-  "homepage": "https://github.com/yahoo/serialize-javascript"
+  "homepage": "https://github.com/yahoo/serialize-javascript",
+  "devDependencies": {
+    "benchmark": "^1.0.0",
+    "chai": "^1.9.1",
+    "istanbul": "^0.3.2",
+    "mocha": "^1.21.4",
+    "xunit-file": "0.0.5"
+  }
 }
