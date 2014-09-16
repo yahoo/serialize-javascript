@@ -26,7 +26,7 @@ $ npm install serialize-javascript
 ## Usage
 
 ```js
-var serialize = require('serialize');
+var serialize = require('serialize-javascript');
 
 serialize({
     str  : 'string',
