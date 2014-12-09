@@ -75,7 +75,7 @@ function serialize(obj) {
         }
 
         if (type === 'DATE') {
-            return dates[index].toString();
+            return 'new Date(' + dates[index].getTime() + ')';
         }
 
         var fn           = functions[index],
