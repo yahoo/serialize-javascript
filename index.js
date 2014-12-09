@@ -11,7 +11,7 @@ var util = require('util');
 module.exports = serialize;
 
 var IS_NATIVE_CODE_REGEX = /\{\s*\[native code\]\s*\}/g,
-    PLACE_HOLDER_REGEX   = /"@__(FUNCTION|REGEXP)_(\d+)__@"/g,
+    PLACE_HOLDER_REGEX   = /"@__(FUNCTION|REGEXP|DATE)_(\d+)__@"/g,
     UNSAFE_CHARS_REGEX   = /[<>\/\u2028\u2029]/g;
 
 // Mapping of unsafe HTML and invalid JavaScript line terminator chars to their
@@ -27,6 +27,7 @@ var UNICODE_CHARS = {
 function serialize(obj) {
     var functions = [],
         regexps   = [],
+        dates     = [], 
         str;
 
     // Creates a JSON string representation of the object and uses placeholders
@@ -39,6 +40,10 @@ function serialize(obj) {
 
         if (util.isRegExp(value)) {
             return '@__REGEXP_' + (regexps.push(value) - 1) + '__@';
+        }
+        // is date
+        if (util.isDate(value)) {
+            return '@__DATE_' + (dates.push(value) - 1) + '__@';
         }
 
         return value;
@@ -57,7 +62,7 @@ function serialize(obj) {
         return UNICODE_CHARS[unsafeChar];
     });
 
-    if (!(functions.length || regexps.length)) {
+    if (!(functions.length || regexps.length || dates.length)) {
         return str;
     }
 
@@ -67,6 +72,10 @@ function serialize(obj) {
     return str.replace(PLACE_HOLDER_REGEX, function (match, type, index) {
         if (type === 'REGEXP') {
             return regexps[index].toString();
+        }
+
+        if (type === 'DATE') {
+            return dates[index].toString();
         }
 
         var fn           = functions[index],
