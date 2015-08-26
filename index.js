@@ -6,7 +6,7 @@ See the accompanying LICENSE file for terms.
 
 'use strict';
 
-var util = require('util');
+var isRegExp = require('util').isRegExp;
 
 module.exports = serialize;
 
@@ -24,6 +24,13 @@ var UNICODE_CHARS = {
     '\u2029': '\\u2029'
 };
 
+// There's an issue with Node 0.10 (V8 3.14.5.9) which causes `JSON.stringify()`
+// and the subsequent `str.replace()` call to take over 100x more time than when
+// a the `JSON.stringify()` replacer function is used and the data being
+// serialized is very large (500KB). A remedy to this is setting the
+// `JSON.stringify()` `space` option to a truthy value.
+var SPACE = 2;
+
 function serialize(obj) {
     var functions = [],
         regexps   = [],
@@ -37,12 +44,12 @@ function serialize(obj) {
             return '@__FUNCTION_' + (functions.push(value) - 1) + '__@';
         }
 
-        if (util.isRegExp(value)) {
+        if (typeof value === 'object' && isRegExp(value)) {
             return '@__REGEXP_' + (regexps.push(value) - 1) + '__@';
         }
 
         return value;
-    });
+    }, SPACE);
 
     // Protects against `JSON.stringify()` returning `undefined`, by serializing
     // to the literal string: "undefined".
@@ -57,7 +64,7 @@ function serialize(obj) {
         return UNICODE_CHARS[unsafeChar];
     });
 
-    if (!(functions.length || regexps.length)) {
+    if (functions.length === 0 && regexps.length === 0) {
         return str;
     }
 
