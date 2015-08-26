@@ -75,6 +75,6 @@ See the [LICENSE file][LICENSE] for license text and copyright information.
 [david]: https://david-dm.org/yahoo/serialize-javascript
 [david-badge]: https://img.shields.io/david/yahoo/serialize-javascript.svg?style=flat-square
 [travis]: https://travis-ci.org/yahoo/serialize-javascript
-[travis-badge]: http://img.shields.io/travis/yahoo/serialize-javascript.svg?style=flat-square
+[travis-badge]: https://img.shields.io/travis/yahoo/serialize-javascript.svg?style=flat-square
 [express-state]: https://github.com/yahoo/express-state
 [LICENSE]: https://github.com/yahoo/serialize-javascript/blob/master/LICENSE
