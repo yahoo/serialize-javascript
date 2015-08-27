@@ -42,10 +42,25 @@ serialize({
 });
 ```
 
-The above will produce the following output:
+The above will produce the following string output:
 
-```js
-'{"str":"string","num":0,"obj":{"foo":"foo"},"arr":[1,2,3],"bool":true,"nil":null,"fn":function echo(arg) { return arg; },"re":/([^\\s]+)/g}'
+```
+{
+  "str": "string",
+  "num": 0,
+  "obj": {
+    "foo": "foo"
+  },
+  "arr": [
+    1,
+    2,
+    3
+  ],
+  "bool": true,
+  "nil": null,
+  "fn": function echo(arg) { return arg; },
+  "re": /([^\s]+)/g
+}
 ```
 
 ### Automatic Escaping of HTML Characters
@@ -58,10 +73,12 @@ serialize({
 });
 ```
 
-The above will produce the following, HTML-escaped output which is safe to put into an HTML document as it will not cause the inline script element to terminate:
+The above will produce the following string, HTML-escaped output which is safe to put into an HTML document as it will not cause the inline script element to terminate:
 
-```js
-'{"haxorXSS":"\\u003C\\u002Fscript\\u003E"}'
+```
+{
+  "haxorXSS": "\u003C\u002Fscript\u003E"
+}
 ```
 
 ## License
