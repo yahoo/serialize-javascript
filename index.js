@@ -32,7 +32,7 @@ var UNICODE_CHARS = {
 // `JSON.stringify()` `space` option to a truthy value which is a token that is
 // later removed to keep the file size down.
 var SPACE        = '@' + UID + '@';
-var SPACE_REGPEX = new RegExp('\\n(@' + UID + '@)+', 'g');
+var SPACE_REGEXP = new RegExp('\\n(@' + UID + '@)+', 'g');
 
 module.exports = function serialize(obj) {
     var functions = [];
@@ -60,7 +60,7 @@ module.exports = function serialize(obj) {
         return String(str);
     }
 
-    str = str.replace(SPACE_REGPEX, '');
+    str = str.replace(SPACE_REGEXP, '');
 
     // Replace unsafe HTML and invalid JavaScript line terminator chars with
     // their safe Unicode char counterpart. This _must_ happen before the
