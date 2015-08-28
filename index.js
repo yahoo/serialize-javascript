@@ -9,7 +9,7 @@ See the accompanying LICENSE file for terms.
 var isRegExp = require('util').isRegExp;
 
 // Generate an internal UID to make the regexp pattern harder to guess.
-var UID                 = Math.floor(Math.random() * 0x10000000000).toString(16);
+var UID                 = Math.floor(Math.random() * 0x10000000000).toString(36);
 var PLACE_HOLDER_REGEXP = new RegExp('"@__(FUNCTION|REGEXP)-' + UID + '-(\\d+)__@"', 'g');
 
 var IS_NATIVE_CODE_REGEXP = /\{\s*\[native code\]\s*\}/g;
@@ -29,8 +29,10 @@ var UNICODE_CHARS = {
 // and the subsequent `str.replace()` call to take over 100x more time than when
 // a the `JSON.stringify()` replacer function is used and the data being
 // serialized is very large (500KB). A remedy to this is setting the
-// `JSON.stringify()` `space` option to a truthy value.
-var SPACE = 2;
+// `JSON.stringify()` `space` option to a truthy value which is a token that is
+// later removed to keep the file size down.
+var SPACE        = '@' + UID + '@';
+var SPACE_REGEXP = new RegExp('\\n(@' + UID + '@)+', 'g');
 
 module.exports = function serialize(obj) {
     var functions = [];
@@ -57,6 +59,8 @@ module.exports = function serialize(obj) {
     if (typeof str !== 'string') {
         return String(str);
     }
+
+    str = str.replace(SPACE_REGEXP, '');
 
     // Replace unsafe HTML and invalid JavaScript line terminator chars with
     // their safe Unicode char counterpart. This _must_ happen before the
