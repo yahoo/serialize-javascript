@@ -46,7 +46,7 @@ describe('serialize( obj )', function () {
         });
 
         it('should serialize JSON to a JSON string', function () {
-            expect(serialize(data)).to.equal(JSON.stringify(data, null, 2));
+            expect(serialize(data)).to.equal(JSON.stringify(data));
         });
 
         it('should deserialize a JSON string to a JSON object', function () {
