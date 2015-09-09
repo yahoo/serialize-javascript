@@ -42,7 +42,7 @@ serialize({
 });
 ```
 
-The above will produce the following output:
+The above will produce the following string output:
 
 ```js
 '{"str":"string","num":0,"obj":{"foo":"foo"},"arr":[1,2,3],"bool":true,"nil":null,"fn":function echo(arg) { return arg; },"re":/([^\\s]+)/g}'
@@ -50,7 +50,7 @@ The above will produce the following output:
 
 ### Automatic Escaping of HTML Characters
 
-A primary feature of this package is to serialize code to a string of literal JavaScript which can be embedded in an HTML document by adding it as the contents of the `<script>` element. In order to make this safe, HTML characters and JavaScript line terminators  are escaped automatically.
+A primary feature of this package is to serialize code to a string of literal JavaScript which can be embedded in an HTML document by adding it as the contents of the `<script>` element. In order to make this safe, HTML characters and JavaScript line terminators are escaped automatically.
 
 ```js
 serialize({
@@ -58,7 +58,7 @@ serialize({
 });
 ```
 
-The above will produce the following, HTML-escaped output which is safe to put into an HTML document as it will not cause the inline script element to terminate:
+The above will produce the following string, HTML-escaped output which is safe to put into an HTML document as it will not cause the inline script element to terminate:
 
 ```js
 '{"haxorXSS":"\\u003C\\u002Fscript\\u003E"}'
