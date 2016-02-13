@@ -48,6 +48,8 @@ The above will produce the following string output:
 '{"str":"string","num":0,"obj":{"foo":"foo"},"arr":[1,2,3],"bool":true,"nil":null,"fn":function echo(arg) { return arg; },"re":/([^\\s]+)/g}'
 ```
 
+Note: to produced a beautified string, you can pass an optional second argument to `serialize()` to define the number of spaces to be used for the indentation.
+
 ### Automatic Escaping of HTML Characters
 
 A primary feature of this package is to serialize code to a string of literal JavaScript which can be embedded in an HTML document by adding it as the contents of the `<script>` element. In order to make this safe, HTML characters and JavaScript line terminators are escaped automatically.
