@@ -25,7 +25,7 @@ var UNICODE_CHARS = {
     '\u2029': '\\u2029'
 };
 
-module.exports = function serialize(obj) {
+module.exports = function serialize(obj, space) {
     var functions = [];
     var regexps   = [];
     var str;
@@ -43,7 +43,7 @@ module.exports = function serialize(obj) {
         }
 
         return value;
-    });
+    }, space);
 
     // Protects against `JSON.stringify()` returning `undefined`, by serializing
     // to the literal string: "undefined".
