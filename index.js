@@ -10,7 +10,7 @@ var isRegExp = require('util').isRegExp;
 
 // Generate an internal UID to make the regexp pattern harder to guess.
 var UID                 = Math.floor(Math.random() * 0x10000000000).toString(16);
-var PLACE_HOLDER_REGEXP = new RegExp('"@__(FUNCTION|REGEXP)-' + UID + '-(\\d+)__@"', 'g');
+var PLACE_HOLDER_REGEXP = new RegExp('"@__(FUNCTION|REGEXP|DATE)-' + UID + '-(\\d+)__@"', 'g');
 
 var IS_NATIVE_CODE_REGEXP = /\{\s*\[native code\]\s*\}/g;
 var UNSAFE_CHARS_REGEXP   = /[<>\/\u2028\u2029]/g;
@@ -25,13 +25,31 @@ var UNICODE_CHARS = {
     '\u2029': '\\u2029'
 };
 
+// We can‘t just instanceof Date since dates are already converted to strings
+// because of native Date.prototype.JSON (which use toISOString)
+var DATE_LENGTH = new Date().toISOString().length
+function isDate(d) {
+  try {
+    return (
+      // testing length first to avoid new Date() for every string
+      d.length === DATE_LENGTH &&
+      d === ((new Date(d)).toISOString())
+    )
+  }
+  // Invalid Date might throw "RangeError: invalid date" when calling toISOString
+  catch(e) {}
+
+  return false
+}
+
 module.exports = function serialize(obj, space) {
     var functions = [];
     var regexps   = [];
+    var dates   = [];
     var str;
 
     // Creates a JSON string representation of the object and uses placeholders
-    // for functions and regexps (identified by index) which are later
+    // for functions, regexps and dates (identified by index) which are later
     // replaced.
     str = JSON.stringify(obj, function (key, value) {
         if (typeof value === 'function') {
@@ -40,6 +58,10 @@ module.exports = function serialize(obj, space) {
 
         if (typeof value === 'object' && isRegExp(value)) {
             return '@__REGEXP-' + UID + '-' + (regexps.push(value) - 1) + '__@';
+        }
+
+        if (typeof value === 'string' && isDate(value)) {
+            return '@__DATE-' + UID + '-' + (dates.push(value) - 1) + '__@';
         }
 
         return value;
@@ -58,14 +80,22 @@ module.exports = function serialize(obj, space) {
         return UNICODE_CHARS[unsafeChar];
     });
 
-    if (functions.length === 0 && regexps.length === 0) {
+    if (
+      functions.length === 0 &&
+      regexps.length === 0 &&
+      dates.length === 0
+    ) {
         return str;
     }
 
-    // Replaces all occurrences of function and regexp placeholders in the JSON
-    // string with their string representations. If the original value can not
-    // be found, then `undefined` is used.
+    // Replaces all occurrences of function, regexp and date placeholders in the
+    // JSON string with their string representations.
+    // If the original value can not be found, then `undefined` is used.
     return str.replace(PLACE_HOLDER_REGEXP, function (match, type, valueIndex) {
+        if (type === 'DATE') {
+            return "new Date(\"" + dates[valueIndex] + "\")";
+        }
+
         if (type === 'REGEXP') {
             return regexps[valueIndex].toString();
         }
