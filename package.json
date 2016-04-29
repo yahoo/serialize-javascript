@@ -1,7 +1,7 @@
 {
   "name": "serialize-javascript",
   "version": "1.2.0",
-  "description": "Serialize JavaScript to a superset of JSON that includes regular expressions and functions.",
+  "description": "Serialize JavaScript to a superset of JSON that includes regular expressions, dates and functions.",
   "main": "index.js",
   "scripts": {
     "benchmark": "node test/benchmark/serialize.js",

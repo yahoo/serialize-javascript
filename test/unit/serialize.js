@@ -169,4 +169,23 @@ describe('serialize( obj )', function () {
             expect(eval(serialize('</script>'))).to.equal('</script>');
         });
     });
+
+    describe('dates', function () {
+        it('should serialize dates', function () {
+            var d = new Date('2016-04-28T22:02:17.156Z');
+            expect(serialize(d)).to.be.a('string').equal('new Date("2016-04-28T22:02:17.156Z")');
+        });
+
+        it('should deserialize a date', function () {
+            var d = eval(serialize(new Date('2016-04-28T22:02:17.156Z')));
+            expect(d).to.be.a('Date');
+            expect(d.toISOString()).to.equal('2016-04-28T22:02:17.156Z');
+        });
+
+        it('should deserialize a string that is not a valid date', function () {
+            var d = eval(serialize('2016-04-28T25:02:17.156Z'));
+            expect(d).to.be.a('string');
+            expect(d).to.equal('2016-04-28T25:02:17.156Z');
+        });
+    })
 });
