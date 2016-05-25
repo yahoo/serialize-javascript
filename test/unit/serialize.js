@@ -169,4 +169,48 @@ describe('serialize( obj )', function () {
             expect(eval(serialize('</script>'))).to.equal('</script>');
         });
     });
+
+    describe('options', function () {
+        it('should accept options as the second argument', function () {
+            expect(serialize('foo', {})).to.equal('"foo"');
+        });
+
+        it('should accept a `space` option', function () {
+            expect(serialize([1], {space: 0})).to.equal('[1]');
+            expect(serialize([1], {space: ''})).to.equal('[1]');
+            expect(serialize([1], {space: undefined})).to.equal('[1]');
+            expect(serialize([1], {space: null})).to.equal('[1]');
+            expect(serialize([1], {space: false})).to.equal('[1]');
+
+            expect(serialize([1], {space: 1})).to.equal('[\n 1\n]');
+            expect(serialize([1], {space: ' '})).to.equal('[\n 1\n]');
+            expect(serialize([1], {space: 2})).to.equal('[\n  1\n]');
+        });
+
+        it('should accept a `isJSON` option', function () {
+            expect(serialize('foo', {isJSON: true})).to.equal('"foo"');
+            expect(serialize('foo', {isJSON: false})).to.equal('"foo"');
+
+            function fn() { return true; }
+
+            expect(serialize(fn)).to.equal('function fn() { return true; }');
+            expect(serialize(fn, {isJSON: false})).to.equal('function fn() { return true; }');
+
+            expect(serialize(fn, {isJSON: true})).to.equal('undefined');
+        });
+    });
+
+    describe('backwards-compatability', function () {
+        it('should accept `space` as the second argument', function () {
+            expect(serialize([1], 0)).to.equal('[1]');
+            expect(serialize([1], '')).to.equal('[1]');
+            expect(serialize([1], undefined)).to.equal('[1]');
+            expect(serialize([1], null)).to.equal('[1]');
+            expect(serialize([1], false)).to.equal('[1]');
+
+            expect(serialize([1], 1)).to.equal('[\n 1\n]');
+            expect(serialize([1], ' ')).to.equal('[\n 1\n]');
+            expect(serialize([1], 2)).to.equal('[\n  1\n]');
+        });
+    });
 });

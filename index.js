@@ -10,14 +10,14 @@ var isRegExp = require('util').isRegExp;
 
 // Generate an internal UID to make the regexp pattern harder to guess.
 var UID                 = Math.floor(Math.random() * 0x10000000000).toString(16);
-var PLACE_HOLDER_REGEXP = new RegExp('"@__(FUNCTION|REGEXP)-' + UID + '-(\\d+)__@"', 'g');
+var PLACE_HOLDER_REGEXP = new RegExp('"@__(F|R)-' + UID + '-(\\d+)__@"', 'g');
 
 var IS_NATIVE_CODE_REGEXP = /\{\s*\[native code\]\s*\}/g;
 var UNSAFE_CHARS_REGEXP   = /[<>\/\u2028\u2029]/g;
 
 // Mapping of unsafe HTML and invalid JavaScript line terminator chars to their
 // Unicode char counterparts which are safe to use in JavaScript strings.
-var UNICODE_CHARS = {
+var ESCAPED_CHARS = {
     '<'     : '\\u003C',
     '>'     : '\\u003E',
     '/'     : '\\u002F',
@@ -25,25 +25,54 @@ var UNICODE_CHARS = {
     '\u2029': '\\u2029'
 };
 
-module.exports = function serialize(obj, space) {
+function escapeUnsafeChars(unsafeChar) {
+    return ESCAPED_CHARS[unsafeChar];
+}
+
+module.exports = function serialize(obj, options) {
+    options || (options = {});
+
+    // Backwards-compatability for `space` as the second argument.
+    if (typeof options === 'number' || typeof options === 'string') {
+        options = {space: options};
+    }
+
     var functions = [];
     var regexps   = [];
-    var str;
 
-    // Creates a JSON string representation of the object and uses placeholders
-    // for functions and regexps (identified by index) which are later
-    // replaced.
-    str = JSON.stringify(obj, function (key, value) {
-        if (typeof value === 'function') {
-            return '@__FUNCTION-' + UID + '-' + (functions.push(value) - 1) + '__@';
+    // Returns placeholders for functions and regexps (identified by index)
+    // which are later replaced by their string representation.
+    function replacer(key, value) {
+        if (!value) {
+            return value;
         }
 
-        if (typeof value === 'object' && isRegExp(value)) {
-            return '@__REGEXP-' + UID + '-' + (regexps.push(value) - 1) + '__@';
+        var type = typeof value;
+
+        if (type === 'object') {
+            if (isRegExp(value)) {
+                return '@__R-' + UID + '-' + (regexps.push(value) - 1) + '__@';
+            }
+
+            return value;
+        }
+
+        if (type === 'function') {
+            return '@__F-' + UID + '-' + (functions.push(value) - 1) + '__@';
         }
 
         return value;
-    }, space);
+    }
+
+    var str;
+
+    // Creates a JSON string representation of the value.
+    // NOTE: Node 0.12 goes into slow mode with extra JSON.stringify() args.
+    if (options.isJSON && !options.space) {
+        str = JSON.stringify(obj);
+    } else {
+        str = JSON.stringify(obj, options.isJSON ? null : replacer, options.space);
+    }
 
     // Protects against `JSON.stringify()` returning `undefined`, by serializing
     // to the literal string: "undefined".
@@ -54,9 +83,7 @@ module.exports = function serialize(obj, space) {
     // Replace unsafe HTML and invalid JavaScript line terminator chars with
     // their safe Unicode char counterpart. This _must_ happen before the
     // regexps and functions are serialized and added back to the string.
-    str = str.replace(UNSAFE_CHARS_REGEXP, function (unsafeChar) {
-        return UNICODE_CHARS[unsafeChar];
-    });
+    str = str.replace(UNSAFE_CHARS_REGEXP, escapeUnsafeChars);
 
     if (functions.length === 0 && regexps.length === 0) {
         return str;
@@ -66,7 +93,7 @@ module.exports = function serialize(obj, space) {
     // string with their string representations. If the original value can not
     // be found, then `undefined` is used.
     return str.replace(PLACE_HOLDER_REGEXP, function (match, type, valueIndex) {
-        if (type === 'REGEXP') {
+        if (type === 'R') {
             return regexps[valueIndex].toString();
         }
 
