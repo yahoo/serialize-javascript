@@ -66,6 +66,28 @@ The above will produce the following string, HTML-escaped output which is safe t
 '{"haxorXSS":"\\u003C\\u002Fscript\\u003E"}'
 ```
 
+### Options
+
+The `serialize()` function accepts `options` as its second argument. There are two options, both default to being `undefined`:
+
+#### `options.space`
+
+This option is the same as the `space` argument that can be passed to [`JSON.stringify`][JSON.stringify]. It can be used to add whitespace and indentation to the serialized output to make it more readable.
+
+```js
+serialize(obj, {space: 2});
+```
+
+#### `options.isJSON`
+
+This option is a signal to `serialize()` that the object being serialized does not contain any function or regexps values. This enables a hot-path that allows serialization to be over 3x faster. If you're serializing a lot of data, and know its pure JSON, then you can enable this option for a speed-up.
+
+**Note:** That when using this option, the output will still be escaped to protect against XSS.
+
+```js
+serialize(obj, {isJSON: true});
+```
+
 ## License
 
 This software is free to use under the Yahoo! Inc. BSD license.
@@ -79,4 +101,5 @@ See the [LICENSE file][LICENSE] for license text and copyright information.
 [travis]: https://travis-ci.org/yahoo/serialize-javascript
 [travis-badge]: https://img.shields.io/travis/yahoo/serialize-javascript.svg?style=flat-square
 [express-state]: https://github.com/yahoo/express-state
+[JSON.stringify]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify
 [LICENSE]: https://github.com/yahoo/serialize-javascript/blob/master/LICENSE
