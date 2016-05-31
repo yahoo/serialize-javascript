@@ -1,7 +1,7 @@
 'use strict';
 
-var Benchmark = require('benchmark'),
-    serialize = require('../../');
+var Benchmark = require('benchmark');
+var serialize = require('../../');
 
 var suiteConfig = {
     onStart: function (e) {
@@ -30,6 +30,14 @@ var simpleObj = {
 new Benchmark.Suite('simpleObj', suiteConfig)
     .add('JSON.stringify( simpleObj )', function () {
         JSON.stringify(simpleObj);
+    })
+    .add('JSON.stringify( simpleObj ) with replacer', function () {
+        JSON.stringify(simpleObj, function (key, value) {
+            return value;
+        });
+    })
+    .add('serialize( simpleObj, {isJSON: true} )', function () {
+        serialize(simpleObj, {isJSON: true});
     })
     .add('serialize( simpleObj )', function () {
         serialize(simpleObj);
