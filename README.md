@@ -88,6 +88,18 @@ This option is a signal to `serialize()` that the object being serialized does n
 serialize(obj, {isJSON: true});
 ```
 
+## Deserializing
+
+For some use cases you might also need to deserialize the string. This is explicitely not part of this module. However, you can easily write it yourself:
+
+```js
+function deserialize(serializedJavascript){
+  return eval('(' + serializedJavascript + ')');
+}
+```
+
+**Note:** Don't forget the parentheses around the serialized javascript, as the opening bracket `{` will be considered to be the start of a body.
+
 ## License
 
 This software is free to use under the Yahoo! Inc. BSD license.
