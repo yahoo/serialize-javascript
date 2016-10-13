@@ -30,5 +30,8 @@
     "istanbul": "^0.3.2",
     "mocha": "^1.21.4",
     "xunit-file": "0.0.5"
+  },
+  "dependencies": {
+    "randombytes": "^2.0.3"
   }
 }
