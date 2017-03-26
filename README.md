@@ -1,7 +1,7 @@
 Serialize JavaScript
 ====================
 
-Serialize JavaScript to a _superset_ of JSON that includes regular expressions and functions.
+Serialize JavaScript to a _superset_ of JSON that includes regular expressions, dates and functions.
 
 [![npm Version][npm-badge]][npm]
 [![Dependency Status][david-badge]][david]
@@ -11,7 +11,7 @@ Serialize JavaScript to a _superset_ of JSON that includes regular expressions a
 
 The code in this package began its life as an internal module to [express-state][]. To expand its usefulness, it now lives as `serialize-javascript` — an independent package on npm.
 
-You're probably wondering: **What about `JSON.stringify()`!?** We've found that sometimes we need to serialize JavaScript **functions** and **regexps**. A great example is a web app that uses client-side URL routing where the route definitions are regexps that need to be shared from the server to the client.
+You're probably wondering: **What about `JSON.stringify()`!?** We've found that sometimes we need to serialize JavaScript **functions**, **regexps** or **dates**. A great example is a web app that uses client-side URL routing where the route definitions are regexps that need to be shared from the server to the client.
 
 The string returned from this package's single export function is literal JavaScript which can be saved to a `.js` file, or be embedded into an HTML document by making the content of a `<script>` element. **HTML charaters and JavaScript line terminators are escaped automatically.**
 
@@ -36,6 +36,7 @@ serialize({
     bool : true,
     nil  : null,
     undef: undefined,
+    date: new Date("Thu, 28 Apr 2016 22:02:17 GMT"),
 
     fn: function echo(arg) { return arg; },
     re: /([^\s]+)/g
@@ -45,7 +46,7 @@ serialize({
 The above will produce the following string output:
 
 ```js
-'{"str":"string","num":0,"obj":{"foo":"foo"},"arr":[1,2,3],"bool":true,"nil":null,"fn":function echo(arg) { return arg; },"re":/([^\\s]+)/g}'
+'{"str":"string","num":0,"obj":{"foo":"foo"},"arr":[1,2,3],"bool":true,"nil":null,date:new Date("2016-04-28T22:02:17.156Z"),"fn":function echo(arg) { return arg; },"re":/([^\\s]+)/g}'
 ```
 
 Note: to produced a beautified string, you can pass an optional second argument to `serialize()` to define the number of spaces to be used for the indentation.
