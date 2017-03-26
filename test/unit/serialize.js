@@ -217,6 +217,7 @@ describe('serialize( obj )', function () {
             expect(serialize(fn, {isJSON: false})).to.equal('function fn() { return true; }');
 
             expect(serialize(fn, {isJSON: true})).to.equal('undefined');
+            expect(serialize([1], {isJSON: true, space: 2})).to.equal('[\n  1\n]');
         });
     });
 
