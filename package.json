@@ -25,10 +25,9 @@
   },
   "homepage": "https://github.com/yahoo/serialize-javascript",
   "devDependencies": {
-    "benchmark": "^1.0.0",
-    "chai": "^1.9.1",
-    "istanbul": "^0.3.2",
-    "mocha": "^1.21.4",
-    "xunit-file": "0.0.5"
+    "benchmark": "^2.1.4",
+    "chai": "^4.1.0",
+    "istanbul": "^0.4.5",
+    "mocha": "^3.4.2"
   }
 }
