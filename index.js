@@ -88,7 +88,7 @@ module.exports = function serialize(obj, options) {
     // their safe Unicode char counterpart. This _must_ happen before the
     // regexps and functions are serialized and added back to the string.
     if(options.unsafe !== true ) {
-      str = str.replace(UNSAFE_CHARS_REGEXP, escapeUnsafeChars);
+        str = str.replace(UNSAFE_CHARS_REGEXP, escapeUnsafeChars);
     }
 
     if (functions.length === 0 && regexps.length === 0 && dates.length === 0) {
