@@ -15,7 +15,7 @@ You're probably wondering: **What about `JSON.stringify()`!?** We've found that 
 
 The string returned from this package's single export function is literal JavaScript which can be saved to a `.js` file, or be embedded into an HTML document by making the content of a `<script>` element.
 
-> **HTML charaters and JavaScript line terminators are escaped automatically.**
+> **HTML characters and JavaScript line terminators are escaped automatically.**
 
 
 ## Installation
@@ -96,7 +96,7 @@ serialize(obj, {isJSON: true});
 
 #### `options.unsafe`
 
-This option is to signal `serialize()` that you want to do a straight convertion without the XSS protection. This options needs to be explicitly set to `true`. HTML characters and JavaScript line terminators will not be escaped. You will have to roll your own.
+This option is to signal `serialize()` that we want to do a straight conversion, without the XSS protection. This options needs to be explicitly set to `true`. HTML characters and JavaScript line terminators will not be escaped. You will have to roll your own.
 
 ```js
 serialize(obj, {unsafe: true});
@@ -104,7 +104,7 @@ serialize(obj, {unsafe: true});
 
 ## Deserializing
 
-For some use cases you might also need to deserialize the string. This is explicitely not part of this module. However, you can easily write it yourself:
+For some use cases you might also need to deserialize the string. This is explicitly not part of this module. However, you can easily write it yourself:
 
 ```js
 function deserialize(serializedJavascript){
