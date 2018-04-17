@@ -1,3 +1,4 @@
 artifacts/
 coverage/
 node_modules/
+.venv/
