@@ -74,7 +74,7 @@ The above will produce the following string, HTML-escaped output which is safe t
 
 ### Options
 
-The `serialize()` function accepts `options` as its second argument. There three options, all being defaulted to `undefined`:
+The `serialize()` function accepts an `options` object as its second argument. All options are being defaulted to `undefined`:
 
 #### `options.space`
 
