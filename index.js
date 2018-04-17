@@ -87,7 +87,7 @@ module.exports = function serialize(obj, options) {
     // Replace unsafe HTML and invalid JavaScript line terminator chars with
     // their safe Unicode char counterpart. This _must_ happen before the
     // regexps and functions are serialized and added back to the string.
-    if(options.unsafe !== true ) {
+    if (options.unsafe !== true ) {
         str = str.replace(UNSAFE_CHARS_REGEXP, escapeUnsafeChars);
     }
 
