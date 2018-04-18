@@ -219,6 +219,24 @@ describe('serialize( obj )', function () {
             expect(serialize(fn, {isJSON: true})).to.equal('undefined');
             expect(serialize([1], {isJSON: true, space: 2})).to.equal('[\n  1\n]');
         });
+
+        it('should accept a `unsafe` option', function () {
+            expect(serialize('foo', {unsafe: true})).to.equal('"foo"');
+            expect(serialize('foo', {unsafe: false})).to.equal('"foo"');
+
+            function fn() { return true; }
+
+            expect(serialize(fn)).to.equal('function fn() { return true; }');
+            expect(serialize(fn, {unsafe: false})).to.equal('function fn() { return true; }');
+            expect(serialize(fn, {unsafe: undefined})).to.equal('function fn() { return true; }');
+            expect(serialize(fn, {unsafe: "true"})).to.equal('function fn() { return true; }');
+
+            expect(serialize(fn, {unsafe: true})).to.equal('function fn() { return true; }');
+            expect(serialize(["1"], {unsafe: false, space: 2})).to.equal('[\n  "1"\n]');
+            expect(serialize(["1"], {unsafe: true, space: 2})).to.equal('[\n  "1"\n]');
+            expect(serialize(["<"], {space: 2})).to.equal('[\n  "\\u003C"\n]');
+            expect(serialize(["<"], {unsafe: true, space: 2})).to.equal('[\n  "<"\n]');
+        });
     });
 
     describe('backwards-compatability', function () {

@@ -30,7 +30,7 @@ function escapeUnsafeChars(unsafeChar) {
 module.exports = function serialize(obj, options) {
     options || (options = {});
 
-    // Backwards-compatability for `space` as the second argument.
+    // Backwards-compatibility for `space` as the second argument.
     if (typeof options === 'number' || typeof options === 'string') {
         options = {space: options};
     }
@@ -87,7 +87,9 @@ module.exports = function serialize(obj, options) {
     // Replace unsafe HTML and invalid JavaScript line terminator chars with
     // their safe Unicode char counterpart. This _must_ happen before the
     // regexps and functions are serialized and added back to the string.
-    str = str.replace(UNSAFE_CHARS_REGEXP, escapeUnsafeChars);
+    if (options.unsafe !== true) {
+        str = str.replace(UNSAFE_CHARS_REGEXP, escapeUnsafeChars);
+    }
 
     if (functions.length === 0 && regexps.length === 0 && dates.length === 0) {
         return str;

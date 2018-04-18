@@ -39,6 +39,12 @@ new Benchmark.Suite('simpleObj', suiteConfig)
     .add('serialize( simpleObj, {isJSON: true} )', function () {
         serialize(simpleObj, {isJSON: true});
     })
+    .add('serialize( simpleObj, {unsafe: true} )', function () {
+        serialize(simpleObj, {unsafe: true});
+    })
+    .add('serialize( simpleObj, {unsafe: true, isJSON: true} )', function () {
+        serialize(simpleObj, {unsafe: true, isJSON: true});
+    })
     .add('serialize( simpleObj )', function () {
         serialize(simpleObj);
     })

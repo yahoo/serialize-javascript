@@ -11,9 +11,12 @@ Serialize JavaScript to a _superset_ of JSON that includes regular expressions, 
 
 The code in this package began its life as an internal module to [express-state][]. To expand its usefulness, it now lives as `serialize-javascript` — an independent package on npm.
 
-You're probably wondering: **What about `JSON.stringify()`!?** We've found that sometimes we need to serialize JavaScript **functions**, **regexps** or **dates**. A great example is a web app that uses client-side URL routing where the route definitions are regexps that need to be shared from the server to the client.
+You're probably wondering: **What about `JSON.stringify()`!?** We've found that sometimes we need to serialize JavaScript **functions**, **regexps** or **dates**. A great example is a web app that uses client-side URL routing where the route definitions are regexps that need to be shared from the server to the client. But this module is also great for communicating between node processes.
 
-The string returned from this package's single export function is literal JavaScript which can be saved to a `.js` file, or be embedded into an HTML document by making the content of a `<script>` element. **HTML charaters and JavaScript line terminators are escaped automatically.**
+The string returned from this package's single export function is literal JavaScript which can be saved to a `.js` file, or be embedded into an HTML document by making the content of a `<script>` element.
+
+> **HTML characters and JavaScript line terminators are escaped automatically.**
+
 
 ## Installation
 
@@ -67,9 +70,11 @@ The above will produce the following string, HTML-escaped output which is safe t
 '{"haxorXSS":"\\u003C\\u002Fscript\\u003E"}'
 ```
 
+> You can pass an optional `unsafe` argument to `serialize()` for straight serialization.
+
 ### Options
 
-The `serialize()` function accepts `options` as its second argument. There are two options, both default to being `undefined`:
+The `serialize()` function accepts an `options` object as its second argument. All options are being defaulted to `undefined`:
 
 #### `options.space`
 
@@ -89,9 +94,17 @@ This option is a signal to `serialize()` that the object being serialized does n
 serialize(obj, {isJSON: true});
 ```
 
+#### `options.unsafe`
+
+This option is to signal `serialize()` that we want to do a straight conversion, without the XSS protection. This options needs to be explicitly set to `true`. HTML characters and JavaScript line terminators will not be escaped. You will have to roll your own.
+
+```js
+serialize(obj, {unsafe: true});
+```
+
 ## Deserializing
 
-For some use cases you might also need to deserialize the string. This is explicitely not part of this module. However, you can easily write it yourself:
+For some use cases you might also need to deserialize the string. This is explicitly not part of this module. However, you can easily write it yourself:
 
 ```js
 function deserialize(serializedJavascript){
