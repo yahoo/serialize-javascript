@@ -109,6 +109,21 @@ describe('serialize( obj )', function () {
             try { serialize(Number); } catch (e) { err = e; }
             expect(err).to.be.an.instanceOf(TypeError);
         });
+
+        it('should serialize enhanced literal objects', function () {
+            var obj = {
+                hello() { return true; }
+            };
+
+            expect(serialize(obj)).to.equal('{"hello":function() { return true; }}');
+        });
+
+        it('should deserialize enhanced literal objects', function () {
+            var obj;
+            eval('obj = ' + serialize({ hello() { return true; } }));
+
+            expect(obj.hello()).to.equal(true);
+        });
     });
 
     describe('regexps', function () {
