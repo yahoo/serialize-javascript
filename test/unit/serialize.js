@@ -112,10 +112,11 @@ describe('serialize( obj )', function () {
 
         it('should serialize enhanced literal objects', function () {
             var obj = {
-                hello() { return true; }
+                foo() { return true; },
+                *bar() { return true; }
             };
 
-            expect(serialize(obj)).to.equal('{"hello":function() { return true; }}');
+            expect(serialize(obj)).to.equal('{"foo":function() { return true; },"bar":function*() { return true; }}');
         });
 
         it('should deserialize enhanced literal objects', function () {
