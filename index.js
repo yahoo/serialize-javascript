@@ -83,8 +83,14 @@ module.exports = function serialize(obj, options) {
       }
 
       var argsStartsAt = serializedFn.indexOf('(');
-      var def = serializedFn.substr(0, argsStartsAt).trim().split(' ').filter(val => val.length > 0);
-      var nonReservedSymbols = def.filter(val => RESERVED_SYMBOLS.indexOf(val) === -1);
+      var def = serializedFn.substr(0, argsStartsAt)
+        .trim()
+        .split(' ')
+        .filter(function(val) { return val.length > 0 });
+
+      var nonReservedSymbols = def.filter(function(val) {
+        return RESERVED_SYMBOLS.indexOf(val) === -1
+      });
 
       // enhanced literal objects, example: {key() {}}
       if(nonReservedSymbols.length > 0) {
