@@ -268,4 +268,17 @@ describe('serialize( obj )', function () {
             expect(serialize([1], 2)).to.equal('[\n  1\n]');
         });
     });
+
+    describe('magic placeholder', function () {
+      it('should handle magic placeholder', function () {
+        var origRand = Math.random
+        Math.random = function () { return 1 }
+        var data = {
+          '@__F-1-0__@': function () {}
+        }
+
+        expect(serialize(data)).to.equal('{"@__F-1-0__@":function () {}}')
+        Math.random = origRand
+      })
+    })
 });

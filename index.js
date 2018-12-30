@@ -6,10 +6,6 @@ See the accompanying LICENSE file for terms.
 
 'use strict';
 
-// Generate an internal UID to make the regexp pattern harder to guess.
-var UID                 = Math.floor(Math.random() * 0x10000000000).toString(16);
-var PLACE_HOLDER_REGEXP = new RegExp('"@__(F|R|D)-' + UID + '-(\\d+)__@"', 'g');
-
 var IS_NATIVE_CODE_REGEXP = /\{\s*\[native code\]\s*\}/g;
 var IS_PURE_FUNCTION = /function.*?\(/;
 var UNSAFE_CHARS_REGEXP   = /[<>\/\u2028\u2029]/g;
@@ -70,6 +66,25 @@ module.exports = function serialize(obj, options) {
 
         return value;
     }
+    // Generate an internal UID, and make sure it won't appear in the object
+    var UID = Math.random().toString(16);
+    var raw = JSON.stringify(obj, function (key, value) {
+      var type = typeof value;
+      // the key could contain a placeholder
+      if (
+        type === 'function' ||
+        (type === 'object' && (value instanceof RegExp || value instanceof Date))
+      ) {
+        return key;
+      }
+      return value;
+    });
+    if (typeof raw === 'string') {
+      while (raw.indexOf(UID) !== -1) {
+        UID += '@';
+      }
+    }
+    var PLACE_HOLDER_REGEXP = new RegExp('"@__(F|R|D)-' + UID + '-(\\d+)__@"', 'g');
 
     function serializeFunc(fn) {
       var serializedFn = fn.toString();
@@ -104,7 +119,6 @@ module.exports = function serialize(obj, options) {
     }
 
     var str;
-
     // Creates a JSON string representation of the value.
     // NOTE: Node 0.12 goes into slow mode with extra JSON.stringify() args.
     if (options.isJSON && !options.space) {
