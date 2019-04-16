@@ -198,6 +198,50 @@ describe('serialize( obj )', function () {
         });
     });
 
+    describe('maps', function () {
+        it('should serialize maps', function () {
+            var regexKey = /.*/;
+            var m = new Map([
+                ['a', 123],
+                [regexKey, 456]
+            ]);
+            expect(serialize(m)).to.be.a('string').equal('new Map([["a",123],[/.*/,456]])');
+            expect(serialize({t: [m]})).to.be.a('string').equal('{"t":[new Map([["a",123],[/.*/,456]])]}');
+        });
+
+        it('should deserialize a map', function () {
+            var m = eval(serialize(new Map([
+                ['a', 123],
+                [null, 456]
+            ])));
+            expect(m).to.be.a('Map');
+            expect(m.get(null)).to.equal(456);
+        });
+    });
+
+    describe('sets', function () {
+        it('should serialize sets', function () {
+            var regex = /.*/;
+            var m = new Set([
+                'a',
+                123,
+                regex
+            ]);
+            expect(serialize(m)).to.be.a('string').equal('new Set(["a",123,/.*/])');
+            expect(serialize({t: [m]})).to.be.a('string').equal('{"t":[new Set(["a",123,/.*/])]}');
+        });
+
+        it('should deserialize a set', function () {
+            var m = eval(serialize(new Set([
+                'a',
+                123,
+                null
+            ])));
+            expect(m).to.be.a('Set');
+            expect(m.has(null)).to.equal(true);
+        });
+    });
+
     describe('XSS', function () {
         it('should encode unsafe HTML chars to Unicode', function () {
             expect(serialize('</script>')).to.equal('"\\u003C\\u002Fscript\\u003E"');
