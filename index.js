@@ -8,7 +8,7 @@ See the accompanying LICENSE file for terms.
 
 // Generate an internal UID to make the regexp pattern harder to guess.
 var UID                 = Math.floor(Math.random() * 0x10000000000).toString(16);
-var PLACE_HOLDER_REGEXP = new RegExp('"@__(F|R|D|M|S)-' + UID + '-(\\d+)__@"', 'g');
+var PLACE_HOLDER_REGEXP = new RegExp('"@__(F|R|D|M|S|O)-' + UID + '-(\\d+)__@"', 'g');
 
 var IS_NATIVE_CODE_REGEXP = /\{\s*\[native code\]\s*\}/g;
 var IS_PURE_FUNCTION = /function.*?\(/;
@@ -30,7 +30,7 @@ function escapeUnsafeChars(unsafeChar) {
     return ESCAPED_CHARS[unsafeChar];
 }
 
-module.exports = function serialize(obj, options) {
+module.exports = function serialize(obj, options, __seems__) {
     options || (options = {});
 
     // Backwards-compatibility for `space` as the second argument.
@@ -43,6 +43,7 @@ module.exports = function serialize(obj, options) {
     var dates     = [];
     var maps      = [];
     var sets      = [];
+    var seems     = __seems__ || new Map();
 
     // Returns placeholders for functions and regexps (identified by index)
     // which are later replaced by their string representation.
@@ -55,6 +56,15 @@ module.exports = function serialize(obj, options) {
         // the replacer runs, so we use this[key] to get the non-toJSONed value.
         var origValue = this[key];
         var type = typeof origValue;
+
+        if ((type === 'object' || type === 'function') && options.extractRef && origValue !== obj) {
+            var index = seems.get(origValue);
+            if (index === undefined) {
+                index = seems.size
+                seems.set(origValue, index)
+            }
+            return '@__O-' + UID + '-' + index + '__@' 
+        }
 
         if (type === 'object') {
             if(origValue instanceof RegExp) {
@@ -136,14 +146,19 @@ module.exports = function serialize(obj, options) {
         str = str.replace(UNSAFE_CHARS_REGEXP, escapeUnsafeChars);
     }
 
-    if (functions.length === 0 && regexps.length === 0 && dates.length === 0 && maps.length === 0 && sets.length === 0) {
+    if (seems.size === 0 && functions.length === 0 && regexps.length === 0 && dates.length === 0 && maps.length === 0 && sets.length === 0) {
         return str;
     }
 
     // Replaces all occurrences of function, regexp, date, map and set placeholders in the
     // JSON string with their string representations. If the original value can
     // not be found, then `undefined` is used.
-    return str.replace(PLACE_HOLDER_REGEXP, function (match, type, valueIndex) {
+    str = str.replace(PLACE_HOLDER_REGEXP, function (match, type, valueIndex) {
+
+        if (type === 'O') {
+            return "v" + valueIndex
+        }
+
         if (type === 'D') {
             return "new Date(\"" + dates[valueIndex].toISOString() + "\")";
         }
@@ -164,4 +179,15 @@ module.exports = function serialize(obj, options) {
 
         return serializeFunc(fn);
     });
+
+    if (seems.size && !__seems__) {
+        var extractVariables = []
+
+        seems.forEach(function(key, obj) {
+            extractVariables.unshift("var v" + key + "=" + serialize(obj, options, seems) + ';')
+        })
+
+        str = "(function(){" + extractVariables.join('') + "return " + str + "})()"
+    }
+    return str
 }
