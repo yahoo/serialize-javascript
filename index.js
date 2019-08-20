@@ -12,6 +12,7 @@ var PLACE_HOLDER_REGEXP = new RegExp('"@__(F|R|D|M|S)-' + UID + '-(\\d+)__@"', '
 
 var IS_NATIVE_CODE_REGEXP = /\{\s*\[native code\]\s*\}/g;
 var IS_PURE_FUNCTION = /function.*?\(/;
+var IS_ARROW_FUNCTION = /.*?=>.*?/;
 var UNSAFE_CHARS_REGEXP   = /[<>\/\u2028\u2029]/g;
 
 var RESERVED_SYMBOLS = ['*', 'async'];
@@ -89,6 +90,11 @@ module.exports = function serialize(obj, options) {
 
       // pure functions, example: {key: function() {}}
       if(IS_PURE_FUNCTION.test(serializedFn)) {
+          return serializedFn;
+      }
+
+      // arrow functions, example: arg1 => arg1+5
+      if(IS_ARROW_FUNCTION.test(serializedFn)) {
           return serializedFn;
       }
 
