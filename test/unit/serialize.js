@@ -417,6 +417,14 @@ describe('serialize( obj )', function () {
             expect(serialize(["<"], {space: 2})).to.equal('[\n  "\\u003C"\n]');
             expect(serialize(["<"], {unsafe: true, space: 2})).to.equal('[\n  "<"\n]');
         });
+
+        it('should accept a `extractRef` option',  function() {
+            var obj = { foo: 1, bar: 2 }
+            expect(serialize({ a: obj, b: obj}, { extractRef: true })).to.equal('(function(){var v0={"foo":1,"bar":2};return {"a":v0,"b":v0}})()')
+            var obj2 = { foo: 3, bar: 4 }
+            expect(serialize({ a: [obj, obj2], b: obj}, { extractRef: true })).to.equal('(function(){var v2={"foo":3,"bar":4};var v1={"foo":1,"bar":2};var v0=[v1,v2];return {"a":v0,"b":v1}})()')
+        })
+    
     });
 
     describe('backwards-compatability', function () {
@@ -432,4 +440,5 @@ describe('serialize( obj )', function () {
             expect(serialize([1], 2)).to.equal('[\n  1\n]');
         });
     });
+
 });
