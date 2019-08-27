@@ -8,7 +8,7 @@ See the accompanying LICENSE file for terms.
 
 // Generate an internal UID to make the regexp pattern harder to guess.
 var UID                 = Math.floor(Math.random() * 0x10000000000).toString(16);
-var PLACE_HOLDER_REGEXP = new RegExp('"@__(F|R|D|M|S)-' + UID + '-(\\d+)__@"', 'g');
+var PLACE_HOLDER_REGEXP = new RegExp('"@__(F|R|D|M|S|B)-' + UID + '-(\\d+)__@"', 'g');
 
 var IS_NATIVE_CODE_REGEXP = /\{\s*\[native code\]\s*\}/g;
 var IS_PURE_FUNCTION = /function.*?\(/;
@@ -44,6 +44,7 @@ module.exports = function serialize(obj, options) {
     var dates     = [];
     var maps      = [];
     var sets      = [];
+    var buffers   = [];
 
     // Returns placeholders for functions and regexps (identified by index)
     // which are later replaced by their string representation.
@@ -73,6 +74,10 @@ module.exports = function serialize(obj, options) {
             if(origValue instanceof Set) {
                 return '@__S-' + UID + '-' + (sets.push(origValue) - 1) + '__@';
             }
+
+            if (origValue instanceof Buffer) {
+                return '@__B-' + UID + '-' + (buffers.push(origValue) - 1) + '__@';
+            }
         }
 
         if (type === 'function') {
@@ -83,40 +88,40 @@ module.exports = function serialize(obj, options) {
     }
 
     function serializeFunc(fn) {
-      var serializedFn = fn.toString();
-      if (IS_NATIVE_CODE_REGEXP.test(serializedFn)) {
-          throw new TypeError('Serializing native function: ' + fn.name);
-      }
+        var serializedFn = fn.toString();
+        if (IS_NATIVE_CODE_REGEXP.test(serializedFn)) {
+            throw new TypeError('Serializing native function: ' + fn.name);
+        }
 
-      // pure functions, example: {key: function() {}}
-      if(IS_PURE_FUNCTION.test(serializedFn)) {
-          return serializedFn;
-      }
+        // pure functions, example: {key: function() {}}
+        if(IS_PURE_FUNCTION.test(serializedFn)) {
+            return serializedFn;
+        }
 
-      // arrow functions, example: arg1 => arg1+5
-      if(IS_ARROW_FUNCTION.test(serializedFn)) {
-          return serializedFn;
-      }
+        // arrow functions, example: arg1 => arg1+5
+        if(IS_ARROW_FUNCTION.test(serializedFn)) {
+            return serializedFn;
+        }
 
-      var argsStartsAt = serializedFn.indexOf('(');
-      var def = serializedFn.substr(0, argsStartsAt)
-        .trim()
-        .split(' ')
-        .filter(function(val) { return val.length > 0 });
+        var argsStartsAt = serializedFn.indexOf('(');
+        var def = serializedFn.substr(0, argsStartsAt)
+            .trim()
+            .split(' ')
+            .filter(function(val) { return val.length > 0 });
 
-      var nonReservedSymbols = def.filter(function(val) {
-        return RESERVED_SYMBOLS.indexOf(val) === -1
-      });
+        var nonReservedSymbols = def.filter(function(val) {
+            return RESERVED_SYMBOLS.indexOf(val) === -1
+        });
 
-      // enhanced literal objects, example: {key() {}}
-      if(nonReservedSymbols.length > 0) {
-          return (def.indexOf('async') > -1 ? 'async ' : '') + 'function'
-            + (def.join('').indexOf('*') > -1 ? '*' : '')
-            + serializedFn.substr(argsStartsAt);
-      }
+        // enhanced literal objects, example: {key() {}}
+        if(nonReservedSymbols.length > 0) {
+            return (def.indexOf('async') > -1 ? 'async ' : '') + 'function'
+                + (def.join('').indexOf('*') > -1 ? '*' : '')
+                + serializedFn.substr(argsStartsAt);
+        }
 
-      // arrow functions
-      return serializedFn;
+        // arrow functions
+        return serializedFn;
     }
 
     var str;
@@ -142,7 +147,7 @@ module.exports = function serialize(obj, options) {
         str = str.replace(UNSAFE_CHARS_REGEXP, escapeUnsafeChars);
     }
 
-    if (functions.length === 0 && regexps.length === 0 && dates.length === 0 && maps.length === 0 && sets.length === 0) {
+    if (functions.length === 0 && regexps.length === 0 && dates.length === 0 && maps.length === 0 && sets.length === 0 && buffers.length === 0) {
         return str;
     }
 
@@ -165,6 +170,11 @@ module.exports = function serialize(obj, options) {
         if (type === 'S') {
             return "new Set(" + serialize(Array.from(sets[valueIndex].values()), options) + ")";
         }
+
+        if (type === 'B') {
+            return "Buffer.from(" + serialize(Array.from(buffers[valueIndex].values()), options) + ")";
+        }
+
 
         var fn = functions[valueIndex];
 
