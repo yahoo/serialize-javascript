@@ -57,6 +57,13 @@ describe('serialize( obj )', function () {
             var ws = String.fromCharCode(8232);
             expect(eval(serialize(ws))).to.equal(ws);
         });
+
+        it('should serialize undefined correctly', function () {
+            var obj;
+            var str = '{"undef":undefined,"nest":{"undef":undefined}}';
+            eval('obj = ' + str);
+            expect(serialize(obj)).to.equal(str);
+        });
     });
 
     describe('functions', function () {
