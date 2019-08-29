@@ -146,7 +146,7 @@ module.exports = function serialize(obj, options) {
     if (typeof str !== 'string') {
         return String(str);
     }
-    
+
     // Replace unsafe HTML and invalid JavaScript line terminator chars with
     // their safe Unicode char counterpart. This _must_ happen before the
     // regexps and functions are serialized and added back to the string.
