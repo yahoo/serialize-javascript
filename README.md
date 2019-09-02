@@ -101,6 +101,11 @@ serialize(obj, {isJSON: true});
 
 This option is to signal `serialize()` that we want to do a straight conversion, without the XSS protection. This options needs to be explicitly set to `true`. HTML characters and JavaScript line terminators will not be escaped. You will have to roll your own.
 
+#### `options.ignoreFunction`
+
+This option is to signal `serialize()` that we do not want serialize JavaScript function. 
+Just treat function like `JSON.stringify` do, but other features will work as expected.
+
 ```js
 serialize(obj, {unsafe: true});
 ```
