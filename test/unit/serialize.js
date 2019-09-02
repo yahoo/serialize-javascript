@@ -438,9 +438,14 @@ describe('serialize( obj )', function () {
                 str:'str',
                 fn
             }
+            // case 1. Pass function to serialize
             expect(serialize(fn, { ignoreFunction: true })).to.equal(`undefined`);
+            // case 2. Pass function(arrow) in object to serialze
             expect(serialize(obj, { ignoreFunction: true })).to.equal("{}");
-            expect(serialize(obj2,{ignoreFunction:true})).to.equal(`{"num":123,"str":"str"}`);
+            // case 3. Other features should work
+            expect(serialize(obj2, { ignoreFunction: true })).to.equal(
+              `{"num":123,"str":"str"}`
+            );
         });
     });
 
