@@ -41,12 +41,8 @@ function deleteFunctions(obj){
     for(var i=0; i<functionKeys.length; i++){
         delete obj[functionKeys[i]]
     }
-    // Object.keys(obj)
-    // .filter(key => typeof obj[key] === "function")
-    // .forEach(functionKey => {
-    //   delete obj[functionKey];
-    // });
 }
+
 module.exports = function serialize(obj, options) {
     options || (options = {});
 
@@ -65,9 +61,12 @@ module.exports = function serialize(obj, options) {
     // Returns placeholders for functions and regexps (identified by index)
     // which are later replaced by their string representation.
     function replacer(key, value) {
+
+        // For nested function
         if(options.ignoreFunction){
             deleteFunctions(value);
         }
+
         if (!value && value !== undefined) {
             return value;
         }
@@ -143,6 +142,7 @@ module.exports = function serialize(obj, options) {
       return serializedFn;
     }
 
+    // Check if the parameter is function
     if( options.ignoreFunction && typeof obj==='function'){
         obj = undefined;
     }
