@@ -32,14 +32,14 @@ function escapeUnsafeChars(unsafeChar) {
 }
 
 function deleteFunctions(obj){
-    var functionKeys = []
-    for(var key in obj){
-        if(typeof obj[key] === 'function'){
-            functionKeys.push(key);
-        }
+    var functionKeys = [];
+    for (var key in obj) {
+      if (typeof obj[key] === "function") {
+        functionKeys.push(key);
+      }
     }
-    for(var i=0; i<functionKeys.length; i++){
-        delete obj[functionKeys[i]]
+    for (var i = 0; i < functionKeys.length; i++) {
+      delete obj[functionKeys[i]];
     }
 }
 
@@ -143,8 +143,8 @@ module.exports = function serialize(obj, options) {
     }
 
     // Check if the parameter is function
-    if( options.ignoreFunction && typeof obj==='function'){
-        obj = undefined;
+    if (options.ignoreFunction && typeof obj === "function") {
+      obj = undefined;
     }
     // Protects against `JSON.stringify()` returning `undefined`, by serializing
     // to the literal string: "undefined".
