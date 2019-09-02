@@ -424,6 +424,24 @@ describe('serialize( obj )', function () {
             expect(serialize(["<"], {space: 2})).to.equal('[\n  "\\u003C"\n]');
             expect(serialize(["<"], {unsafe: true, space: 2})).to.equal('[\n  "<"\n]');
         });
+
+        it("should accept a `ignoreFunction` option", function() {
+            function fn() { return true; }
+            const obj = {
+              fn,
+              fn_arrow: () => {
+                return true;
+              }
+            };            
+            const obj2 = {
+                num:123,
+                str:'str',
+                fn
+            }
+            expect(serialize(fn, { ignoreFunction: true })).to.equal(`undefined`);
+            expect(serialize(obj, { ignoreFunction: true })).to.equal("{}");
+            expect(serialize(obj2,{ignoreFunction:true})).to.equal(`{"num":123,"str":"str"}`);
+        });
     });
 
     describe('backwards-compatability', function () {
