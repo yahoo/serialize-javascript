@@ -105,6 +105,15 @@ This option is to signal `serialize()` that we want to do a straight conversion,
 serialize(obj, {unsafe: true});
 ```
 
+#### `options.ignoreFunction`
+
+This option is to signal `serialize()` that we do not want serialize JavaScript function. 
+Just treat function like `JSON.stringify` do, but other features will work as expected.
+
+```js
+serialize(obj, {ignoreFunction: true});
+```
+
 ## Deserializing
 
 For some use cases you might also need to deserialize the string. This is explicitly not part of this module. However, you can easily write it yourself:

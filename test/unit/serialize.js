@@ -424,6 +424,29 @@ describe('serialize( obj )', function () {
             expect(serialize(["<"], {space: 2})).to.equal('[\n  "\\u003C"\n]');
             expect(serialize(["<"], {unsafe: true, space: 2})).to.equal('[\n  "<"\n]');
         });
+
+        it("should accept a `ignoreFunction` option", function() {
+            function fn() { return true; }
+            var obj = {
+                fn: fn,
+                fn_arrow: () => {
+                    return true;
+                }
+            };            
+            var obj2 = {
+                num: 123,
+                str: 'str',
+                fn: fn
+            }
+            // case 1. Pass function to serialize
+            expect(serialize(fn, { ignoreFunction: true })).to.equal('undefined');
+            // case 2. Pass function(arrow) in object to serialze
+            expect(serialize(obj, { ignoreFunction: true })).to.equal('{}');
+            // case 3. Other features should work
+            expect(serialize(obj2, { ignoreFunction: true })).to.equal(
+              '{"num":123,"str":"str"}'
+            );
+        });
     });
 
     describe('backwards-compatability', function () {

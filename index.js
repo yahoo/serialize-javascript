@@ -31,6 +31,18 @@ function escapeUnsafeChars(unsafeChar) {
     return ESCAPED_CHARS[unsafeChar];
 }
 
+function deleteFunctions(obj){
+    var functionKeys = [];
+    for (var key in obj) {
+        if (typeof obj[key] === "function") {
+            functionKeys.push(key);
+        }
+    }
+    for (var i = 0; i < functionKeys.length; i++) {
+        delete obj[functionKeys[i]];
+    }
+}
+
 module.exports = function serialize(obj, options) {
     options || (options = {});
 
@@ -49,6 +61,11 @@ module.exports = function serialize(obj, options) {
     // Returns placeholders for functions and regexps (identified by index)
     // which are later replaced by their string representation.
     function replacer(key, value) {
+
+        // For nested function
+        if(options.ignoreFunction){
+            deleteFunctions(value);
+        }
 
         if (!value && value !== undefined) {
             return value;
@@ -125,6 +142,10 @@ module.exports = function serialize(obj, options) {
       return serializedFn;
     }
 
+    // Check if the parameter is function
+    if (options.ignoreFunction && typeof obj === "function") {
+        obj = undefined;
+    }
     // Protects against `JSON.stringify()` returning `undefined`, by serializing
     // to the literal string: "undefined".
     if (obj === undefined) {
