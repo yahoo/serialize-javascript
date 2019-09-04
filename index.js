@@ -8,7 +8,7 @@ See the accompanying LICENSE file for terms.
 
 // Generate an internal UID to make the regexp pattern harder to guess.
 var UID                 = Math.floor(Math.random() * 0x10000000000).toString(16);
-var PLACE_HOLDER_REGEXP = new RegExp('"@__(F|R|D|M|S)-' + UID + '-(\\d+)__@"', 'g');
+var PLACE_HOLDER_REGEXP = new RegExp('"@__(F|R|D|M|S|U)-' + UID + '-(\\d+)__@"', 'g');
 
 var IS_NATIVE_CODE_REGEXP = /\{\s*\[native code\]\s*\}/g;
 var IS_PURE_FUNCTION = /function.*?\(/;
@@ -44,11 +44,13 @@ module.exports = function serialize(obj, options) {
     var dates     = [];
     var maps      = [];
     var sets      = [];
+    var undefs    = [];
 
     // Returns placeholders for functions and regexps (identified by index)
     // which are later replaced by their string representation.
     function replacer(key, value) {
-        if (!value) {
+
+        if (!value && value !== undefined) {
             return value;
         }
 
@@ -77,6 +79,10 @@ module.exports = function serialize(obj, options) {
 
         if (type === 'function') {
             return '@__F-' + UID + '-' + (functions.push(origValue) - 1) + '__@';
+        }
+
+        if (type === 'undefined') {
+            return '@__U-' + UID + '-' + (undefs.push(origValue) - 1) + '__@';
         }
 
         return value;
@@ -119,6 +125,12 @@ module.exports = function serialize(obj, options) {
       return serializedFn;
     }
 
+    // Protects against `JSON.stringify()` returning `undefined`, by serializing
+    // to the literal string: "undefined".
+    if (obj === undefined) {
+        return String(obj);
+    }
+
     var str;
 
     // Creates a JSON string representation of the value.
@@ -142,7 +154,7 @@ module.exports = function serialize(obj, options) {
         str = str.replace(UNSAFE_CHARS_REGEXP, escapeUnsafeChars);
     }
 
-    if (functions.length === 0 && regexps.length === 0 && dates.length === 0 && maps.length === 0 && sets.length === 0) {
+    if (functions.length === 0 && regexps.length === 0 && dates.length === 0 && maps.length === 0 && sets.length === 0 && undefs.length === 0) {
         return str;
     }
 
@@ -164,6 +176,10 @@ module.exports = function serialize(obj, options) {
 
         if (type === 'S') {
             return "new Set(" + serialize(Array.from(sets[valueIndex].values()), options) + ")";
+        }
+
+        if (type === 'U') {
+            return 'undefined'
         }
 
         var fn = functions[valueIndex];
