@@ -251,7 +251,7 @@ describe('serialize( obj )', function () {
     describe('regexps', function () {
         it('should serialize constructed regexps', function () {
             var re = new RegExp('asdf');
-            expect(serialize(re)).to.be.a('string').equal('/asdf/');
+            expect(serialize(re)).to.be.a('string').equal('new RegExp("asdf", "")');
         });
 
         it('should deserialize constructed regexps', function () {
@@ -262,7 +262,7 @@ describe('serialize( obj )', function () {
 
         it('should serialize literal regexps', function () {
             var re = /asdf/;
-            expect(serialize(re)).to.be.a('string').equal('/asdf/');
+            expect(serialize(re)).to.be.a('string').equal('new RegExp("asdf", "")');
         });
 
         it('should deserialize literal regexps', function () {
@@ -273,7 +273,7 @@ describe('serialize( obj )', function () {
 
         it('should serialize regexps with flags', function () {
             var re = /^asdf$/gi;
-            expect(serialize(re)).to.equal('/^asdf$/gi');
+            expect(serialize(re)).to.equal('new RegExp("^asdf$", "gi")');
         });
 
         it('should deserialize regexps with flags', function () {
@@ -285,17 +285,22 @@ describe('serialize( obj )', function () {
         });
 
         it('should serialize regexps with escaped chars', function () {
-            expect(serialize(/\..*/)).to.equal('/\\..*/');
-            expect(serialize(new RegExp('\\..*'))).to.equal('/\\..*/');
+            expect(serialize(/\..*/)).to.equal('new RegExp("\\..*", "")');
+            expect(serialize(new RegExp('\\..*'))).to.equal('new RegExp("\\..*", "")');
         });
 
         it('should deserialize regexps with escaped chars', function () {
             var re = eval(serialize(/\..*/));
             expect(re).to.be.a('RegExp');
-            expect(re.source).to.equal('\\..*');
+            expect(re.source).to.equal('..*');
             re = eval(serialize(new RegExp('\\..*')));
             expect(re).to.be.a('RegExp');
-            expect(re.source).to.equal('\\..*');
+            expect(re.source).to.equal('..*');
+        });
+
+        it('should serialize dangerous regexps', function () {
+            var re = /[</script><script>alert('xss')//]/
+            expect(serialize(re)).to.be.a('string').equal('new RegExp("[<\\/script><script>alert(\'xss\')\\/\\/]", "")');
         });
     });
 
@@ -332,8 +337,8 @@ describe('serialize( obj )', function () {
                 ['a', 123],
                 [regexKey, 456]
             ]);
-            expect(serialize(m)).to.be.a('string').equal('new Map([["a",123],[/.*/,456]])');
-            expect(serialize({t: [m]})).to.be.a('string').equal('{"t":[new Map([["a",123],[/.*/,456]])]}');
+            expect(serialize(m)).to.be.a('string').equal('new Map([["a",123],[new RegExp(".*", ""),456]])');
+            expect(serialize({t: [m]})).to.be.a('string').equal('{"t":[new Map([["a",123],[new RegExp(".*", ""),456]])]}');
         });
 
         it('should deserialize a map', function () {
@@ -354,8 +359,8 @@ describe('serialize( obj )', function () {
                 123,
                 regex
             ]);
-            expect(serialize(m)).to.be.a('string').equal('new Set(["a",123,/.*/])');
-            expect(serialize({t: [m]})).to.be.a('string').equal('{"t":[new Set(["a",123,/.*/])]}');
+            expect(serialize(m)).to.be.a('string').equal('new Set(["a",123,new RegExp(".*", "")])');
+            expect(serialize({t: [m]})).to.be.a('string').equal('{"t":[new Set(["a",123,new RegExp(".*", "")])]}');
         });
 
         it('should deserialize a set', function () {
