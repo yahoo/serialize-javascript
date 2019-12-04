@@ -188,7 +188,7 @@ module.exports = function serialize(obj, options) {
         }
 
         if (type === 'R') {
-            return "new RegExp(\"" + regexps[valueIndex].source + "\", \"" + regexps[valueIndex].flags + "\")";
+            return "new RegExp(" + serialize(regexps[valueIndex].source) + ", \"" + regexps[valueIndex].flags + "\")";
         }
 
         if (type === 'M') {
