@@ -4,3 +4,4 @@ test/
 .gitignore
 .npmignore
 .travis.yml
+.nyc_output
