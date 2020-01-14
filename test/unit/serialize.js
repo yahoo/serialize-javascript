@@ -299,7 +299,7 @@ describe('serialize( obj )', function () {
         });
 
         it('should serialize dangerous regexps', function () {
-            var re = /[</script><script>alert('xss')//]/
+            var re = /[<\/script><script>alert('xss')\/\/]/
             expect(serialize(re)).to.be.a('string').equal('new RegExp("[\\u003C\\\\\\u002Fscript\\u003E\\u003Cscript\\u003Ealert(\'xss\')\\\\\\u002F\\\\\\u002F]", "")');
         });
     });
