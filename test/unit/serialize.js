@@ -336,17 +336,17 @@ describe('serialize( obj )', function () {
             var m = new Map([
                 ['a', 123],
                 [regexKey, 456],
-                [Infinity,322]
+                [Infinity, 789]
             ]);
-            expect(serialize(m)).to.be.a('string').equal('new Map([["a",123],[new RegExp(".*", ""),456],[Infinity,322]])');
-            expect(serialize({t: [m]})).to.be.a('string').equal('{"t":[new Map([["a",123],[new RegExp(".*", ""),456],[Infinity,322]])]}');
+            expect(serialize(m)).to.be.a('string').equal('new Map([["a",123],[new RegExp(".*", ""),456],[Infinity,789]])');
+            expect(serialize({t: [m]})).to.be.a('string').equal('{"t":[new Map([["a",123],[new RegExp(".*", ""),456],[Infinity,789]])]}');
         });
 
         it('should deserialize a map', function () {
             var m = eval(serialize(new Map([
                 ['a', 123],
                 [null, 456],
-                [Infinity,322]
+                [Infinity, 789]
             ])));
             expect(m).to.be.a('Map');
             expect(m.get(null)).to.equal(456);
