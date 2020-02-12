@@ -103,7 +103,7 @@ module.exports = function serialize(obj, options) {
             return '@__U-' + UID + '-' + (undefs.push(origValue) - 1) + '__@';
         }
 
-        if (origValue === Infinity) {
+        if (type === 'number' && !isNaN(origValue) && !isFinite(origValue)) {
             return '@__I-' + UID + '-' + (infinities.push(origValue) - 1) + '__@';
         }
 
@@ -209,7 +209,7 @@ module.exports = function serialize(obj, options) {
         }
 
         if (type === 'I') {
-            return 'Infinity';
+            return infinities[valueIndex];
         }
 
         var fn = functions[valueIndex];

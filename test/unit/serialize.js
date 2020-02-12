@@ -388,6 +388,16 @@ describe('serialize( obj )', function () {
             var d = eval(serialize(Infinity));
             expect(d).to.equal(Infinity);
         });
+
+        it('should serialize -Infinity', function () {
+            expect(serialize(-Infinity)).to.equal('-Infinity');
+            expect(serialize({t: [-Infinity]})).to.be.a('string').equal('{"t":[-Infinity]}');
+        });
+
+        it('should deserialize -Infinity', function () {
+            var d = eval(serialize(-Infinity));
+            expect(d).to.equal(-Infinity);
+        });
     });
 
     describe('XSS', function () {
