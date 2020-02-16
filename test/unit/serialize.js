@@ -335,16 +335,18 @@ describe('serialize( obj )', function () {
             var regexKey = /.*/;
             var m = new Map([
                 ['a', 123],
-                [regexKey, 456]
+                [regexKey, 456],
+                [Infinity, 789]
             ]);
-            expect(serialize(m)).to.be.a('string').equal('new Map([["a",123],[new RegExp(".*", ""),456]])');
-            expect(serialize({t: [m]})).to.be.a('string').equal('{"t":[new Map([["a",123],[new RegExp(".*", ""),456]])]}');
+            expect(serialize(m)).to.be.a('string').equal('new Map([["a",123],[new RegExp(".*", ""),456],[Infinity,789]])');
+            expect(serialize({t: [m]})).to.be.a('string').equal('{"t":[new Map([["a",123],[new RegExp(".*", ""),456],[Infinity,789]])]}');
         });
 
         it('should deserialize a map', function () {
             var m = eval(serialize(new Map([
                 ['a', 123],
-                [null, 456]
+                [null, 456],
+                [Infinity, 789]
             ])));
             expect(m).to.be.a('Map');
             expect(m.get(null)).to.equal(456);
@@ -357,20 +359,44 @@ describe('serialize( obj )', function () {
             var m = new Set([
                 'a',
                 123,
-                regex
+                regex,
+                Infinity
             ]);
-            expect(serialize(m)).to.be.a('string').equal('new Set(["a",123,new RegExp(".*", "")])');
-            expect(serialize({t: [m]})).to.be.a('string').equal('{"t":[new Set(["a",123,new RegExp(".*", "")])]}');
+            expect(serialize(m)).to.be.a('string').equal('new Set(["a",123,new RegExp(".*", ""),Infinity])');
+            expect(serialize({t: [m]})).to.be.a('string').equal('{"t":[new Set(["a",123,new RegExp(".*", ""),Infinity])]}');
         });
 
         it('should deserialize a set', function () {
             var m = eval(serialize(new Set([
                 'a',
                 123,
-                null
+                null,
+                Infinity
             ])));
             expect(m).to.be.a('Set');
             expect(m.has(null)).to.equal(true);
+        });
+    });
+
+    describe('Infinity', function () {
+        it('should serialize Infinity', function () {
+            expect(serialize(Infinity)).to.equal('Infinity');
+            expect(serialize({t: [Infinity]})).to.be.a('string').equal('{"t":[Infinity]}');
+        });
+
+        it('should deserialize Infinity', function () {
+            var d = eval(serialize(Infinity));
+            expect(d).to.equal(Infinity);
+        });
+
+        it('should serialize -Infinity', function () {
+            expect(serialize(-Infinity)).to.equal('-Infinity');
+            expect(serialize({t: [-Infinity]})).to.be.a('string').equal('{"t":[-Infinity]}');
+        });
+
+        it('should deserialize -Infinity', function () {
+            var d = eval(serialize(-Infinity));
+            expect(d).to.equal(-Infinity);
         });
     });
 
