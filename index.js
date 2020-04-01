@@ -6,9 +6,12 @@ See the accompanying LICENSE file for terms.
 
 'use strict';
 
+var randomBytes = require('randombytes');
+
 // Generate an internal UID to make the regexp pattern harder to guess.
-var UID                 = Math.floor(Math.random() * 0x10000000000).toString(16);
-var PLACE_HOLDER_REGEXP = new RegExp('"@__(F|R|D|M|S|U|I)-' + UID + '-(\\d+)__@"', 'g');
+var UID_LENGTH          = 16;
+var UID                 = generateUID();
+var PLACE_HOLDER_REGEXP = new RegExp('(\\\\)?"@__(F|R|D|M|S|U|I)-' + UID + '-(\\d+)__@"', 'g');
 
 var IS_NATIVE_CODE_REGEXP = /\{\s*\[native code\]\s*\}/g;
 var IS_PURE_FUNCTION = /function.*?\(/;
@@ -29,6 +32,15 @@ var ESCAPED_CHARS = {
 
 function escapeUnsafeChars(unsafeChar) {
     return ESCAPED_CHARS[unsafeChar];
+}
+
+function generateUID() {
+    var bytes = randomBytes(UID_LENGTH);
+    var result = '';
+    for(var i=0; i<UID_LENGTH; ++i) {
+        result += bytes[i].toString(16);
+    }
+    return result;
 }
 
 function deleteFunctions(obj){
@@ -187,7 +199,14 @@ module.exports = function serialize(obj, options) {
     // Replaces all occurrences of function, regexp, date, map and set placeholders in the
     // JSON string with their string representations. If the original value can
     // not be found, then `undefined` is used.
-    return str.replace(PLACE_HOLDER_REGEXP, function (match, type, valueIndex) {
+    return str.replace(PLACE_HOLDER_REGEXP, function (match, backSlash, type, valueIndex) {
+        // The placeholder may not be preceded by a backslash. This is to prevent
+        // replacing things like `"a\"@__R-<UID>-0__@"` and thus outputting
+        // invalid JS.
+        if (backSlash) {
+            return match;
+        }
+
         if (type === 'D') {
             return "new Date(\"" + dates[valueIndex].toISOString() + "\")";
         }
