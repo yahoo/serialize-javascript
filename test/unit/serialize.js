@@ -1,8 +1,22 @@
 /* global describe, it, beforeEach */
 'use strict';
 
+// temporarily monkeypatch `crypto.randomBytes` so we'll have a
+// predictable UID for our tests
+var crypto = require('crypto');
+var oldRandom = crypto.randomBytes;
+crypto.randomBytes = function(len, cb) {
+    var buf = Buffer.alloc(len);
+    buf.fill(0x00);
+    if (cb)
+        cb(null, buf);
+    return buf;
+};
+
 var serialize = require('../../'),
     expect    = require('chai').expect;
+
+crypto.randomBytes = oldRandom;
 
 describe('serialize( obj )', function () {
     it('should be a function', function () {
@@ -493,4 +507,17 @@ describe('serialize( obj )', function () {
             expect(serialize([1], 2)).to.equal('[\n  1\n]');
         });
     });
+
+    describe('placeholders', function() {
+        it('should not be replaced within string literals', function () {
+            // Since we made the UID deterministic this should always be the placeholder
+            var fakePlaceholder = '"@__R-0000000000000000-0__@';
+            var serialized = serialize({bar: /1/i, foo: fakePlaceholder}, {uid: 'foo'});
+            var obj = eval('(' + serialized + ')');
+            expect(obj).to.be.a('Object');
+            expect(obj.foo).to.be.a('String');
+            expect(obj.foo).to.equal(fakePlaceholder);
+        });
+    });
+
 });
