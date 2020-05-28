@@ -11,7 +11,7 @@ var randomBytes = require('randombytes');
 // Generate an internal UID to make the regexp pattern harder to guess.
 var UID_LENGTH          = 16;
 var UID                 = generateUID();
-var PLACE_HOLDER_REGEXP = new RegExp('(\\\\)?"@__(F|R|D|M|S|U|I)-' + UID + '-(\\d+)__@"', 'g');
+var PLACE_HOLDER_REGEXP = new RegExp('(\\\\)?"@__(F|R|D|M|S|U|I|B)-' + UID + '-(\\d+)__@"', 'g');
 
 var IS_NATIVE_CODE_REGEXP = /\{\s*\[native code\]\s*\}/g;
 var IS_PURE_FUNCTION = /function.*?\(/;
@@ -70,6 +70,7 @@ module.exports = function serialize(obj, options) {
     var sets      = [];
     var undefs    = [];
     var infinities= [];
+    var bigInts = [];
 
     // Returns placeholders for functions and regexps (identified by index)
     // which are later replaced by their string representation.
@@ -117,6 +118,10 @@ module.exports = function serialize(obj, options) {
 
         if (type === 'number' && !isNaN(origValue) && !isFinite(origValue)) {
             return '@__I-' + UID + '-' + (infinities.push(origValue) - 1) + '__@';
+        }
+
+        if (type === 'bigint') {
+            return '@__B-' + UID + '-' + (bigInts.push(origValue) - 1) + '__@';
         }
 
         return value;
@@ -192,7 +197,7 @@ module.exports = function serialize(obj, options) {
         str = str.replace(UNSAFE_CHARS_REGEXP, escapeUnsafeChars);
     }
 
-    if (functions.length === 0 && regexps.length === 0 && dates.length === 0 && maps.length === 0 && sets.length === 0 && undefs.length === 0 && infinities.length === 0) {
+    if (functions.length === 0 && regexps.length === 0 && dates.length === 0 && maps.length === 0 && sets.length === 0 && undefs.length === 0 && infinities.length === 0 && bigInts.length === 0) {
         return str;
     }
 
@@ -229,6 +234,10 @@ module.exports = function serialize(obj, options) {
 
         if (type === 'I') {
             return infinities[valueIndex];
+        }
+
+        if (type === 'B') {
+            return "BigInt(\"" + bigInts[valueIndex] + "\")";
         }
 
         var fn = functions[valueIndex];
