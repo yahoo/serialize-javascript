@@ -414,24 +414,6 @@ describe('serialize( obj )', function () {
         });
     });
 
-    describe('BigInt', function () {
-        it('should serialize BigInt', function () {
-            var b = BigInt(9999);
-            expect(serialize(b)).to.equal('BigInt("9999")');
-            expect(serialize({t: [b]})).to.be.a('string').equal('{"t":[BigInt("9999")]}');
-        });
-
-        it('should deserialize BigInt', function () {
-            var d = eval(serialize(BigInt(9999)));
-            expect(d).to.be.a('BigInt');
-            expect(d.toString()).to.equal('9999');
-        });
-
-        it('should throw error for invalid bigint', function () {
-            expect(() => serialize(BigInt('abc'))).to.throw(Error);
-        });
-    });
-
     describe('XSS', function () {
         it('should encode unsafe HTML chars to Unicode', function () {
             expect(serialize('</script>')).to.equal('"\\u003C\\u002Fscript\\u003E"');
