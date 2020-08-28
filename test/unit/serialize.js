@@ -392,6 +392,26 @@ describe('serialize( obj )', function () {
         });
     });
 
+    describe('sparse arrays', function () {
+        it('should serialize sparse arrays', function () {
+            var a = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+            delete a[0];
+            a.length = 3;
+            a[5] = "wat"
+            expect(serialize(a)).to.be.a('string').equal('Array.prototype.slice.call({"1":2,"2":3,"5":"wat","length":6})');
+            expect(serialize({t: [a]})).to.be.a('string').equal('{"t":[Array.prototype.slice.call({"1":2,"2":3,"5":"wat","length":6})]}');
+        });
+
+        it('should deserialize a sparse array', function () {
+            var a = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+            delete a[0];
+            a.length = 3;
+            a[5] = "wat"
+            var b = eval(serialize(a));
+            expect(b).to.be.a('Array').deep.equal([ , 2, 3, , , 'wat' ]);
+        });
+    });
+
     describe('Infinity', function () {
         it('should serialize Infinity', function () {
             expect(serialize(Infinity)).to.equal('Infinity');
