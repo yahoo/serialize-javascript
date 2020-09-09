@@ -5,3 +5,5 @@ test/
 .npmignore
 .travis.yml
 .nyc_output
+.vscode
+.github
