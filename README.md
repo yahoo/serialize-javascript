@@ -141,4 +141,4 @@ See the [LICENSE file][LICENSE] for license text and copyright information.
 [travis-badge]: https://img.shields.io/travis/yahoo/serialize-javascript.svg?style=flat-square
 [express-state]: https://github.com/yahoo/express-state
 [JSON.stringify]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify
-[LICENSE]: https://github.com/yahoo/serialize-javascript/blob/master/LICENSE
+[LICENSE]: https://github.com/yahoo/serialize-javascript/blob/main/LICENSE
