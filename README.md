@@ -117,15 +117,7 @@ serialize(obj, {ignoreFunction: true});
 
 ## Deserializing
 
-For some use cases you might also need to deserialize the string. This is explicitly not part of this module. However, you can easily write it yourself:
-
-```js
-function deserialize(serializedJavascript){
-  return eval('(' + serializedJavascript + ')');
-}
-```
-
-**Note:** Don't forget the parentheses around the serialized javascript, as the opening bracket `{` will be considered to be the start of a body.
+For some use cases you might also need to deserialize the string. Modern browsers support using [JSON.parse](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse) to deserialize JSON, which protects against malicious scripts being executed through malformed JSON.
 
 ## License
 
