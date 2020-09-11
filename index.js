@@ -63,6 +63,7 @@ module.exports = function serialize(obj, options) {
         options = {space: options};
     }
 
+    var stringify = options.stringify || JSON.stringify;
     var functions = [];
     var regexps   = [];
     var dates     = [];
@@ -187,9 +188,9 @@ module.exports = function serialize(obj, options) {
     // Creates a JSON string representation of the value.
     // NOTE: Node 0.12 goes into slow mode with extra JSON.stringify() args.
     if (options.isJSON && !options.space) {
-        str = JSON.stringify(obj);
+        str = stringify(obj);
     } else {
-        str = JSON.stringify(obj, options.isJSON ? null : replacer, options.space);
+        str = stringify(obj, options.isJSON ? null : replacer, options.space);
     }
 
     // Protects against `JSON.stringify()` returning `undefined`, by serializing
