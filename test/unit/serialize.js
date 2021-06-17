@@ -452,6 +452,20 @@ describe('serialize( obj )', function () {
         });
     });
 
+    describe('URL', function () {
+        it('should serialize URL', function () {
+            var u = new URL('https://x.com/')
+            expect(serialize(u)).to.equal('new URL("https://x.com/")');
+            expect(serialize({t: [u]})).to.be.a('string').equal('{"t":[new URL("https://x.com/")]}');
+        });
+
+        it('should deserialize URL', function () {
+            var d = eval(serialize(new URL('https://x.com/')));
+            expect(d).to.be.a('URL');
+            expect(d.toString()).to.equal('https://x.com/');
+        });
+    });
+
     describe('XSS', function () {
         it('should encode unsafe HTML chars to Unicode', function () {
             expect(serialize('</script>')).to.equal('"\\u003C\\u002Fscript\\u003E"');
