@@ -7,6 +7,7 @@ See the accompanying LICENSE file for terms.
 'use strict';
 
 var randomBytes = require('randombytes');
+var URL = require('url').URL;
 
 // Generate an internal UID to make the regexp pattern harder to guess.
 var UID_LENGTH          = 16;
@@ -116,6 +117,7 @@ module.exports = function serialize(obj, options) {
                 }
             }
 
+            try{
             if(origValue instanceof URL) {
                 return '@__L-' + UID + '-' + (urls.push(origValue) - 1) + '__@';
             }
