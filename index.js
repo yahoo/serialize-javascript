@@ -117,7 +117,6 @@ module.exports = function serialize(obj, options) {
                 }
             }
 
-            try{
             if(origValue instanceof URL) {
                 return '@__L-' + UID + '-' + (urls.push(origValue) - 1) + '__@';
             }
