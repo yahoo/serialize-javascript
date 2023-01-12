@@ -83,7 +83,7 @@ module.exports = function serialize(obj, options) {
             deleteFunctions(value);
         }
 
-        if (!value && value !== undefined) {
+        if (!value && value !== undefined && value !== BigInt(0)) {
             return value;
         }
 
