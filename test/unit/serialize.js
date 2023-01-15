@@ -441,6 +441,12 @@ describe('serialize( obj )', function () {
             expect(serialize({t: [b]})).to.be.a('string').equal('{"t":[BigInt("9999")]}');
         });
 
+        it('should serialize 0n', function () {
+            var b = BigInt(0);
+            expect(serialize(b)).to.equal('BigInt("0")');
+            expect(serialize({t: [b]})).to.be.a('string').equal('{"t":[BigInt("0")]}');
+        });
+
         it('should deserialize BigInt', function () {
             var d = eval(serialize(BigInt(9999)));
             expect(d).to.be.a('BigInt');
