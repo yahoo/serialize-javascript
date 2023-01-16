@@ -472,6 +472,20 @@ describe('serialize( obj )', function () {
         });
     });
 
+    describe('Error', function () {
+        it('should serialize Error', function () {
+            var e = new Error('Error message.')
+            expect(serialize(e)).to.equal('new Error("Error message.")');
+            expect(serialize({t: [e]})).to.be.a('string').equal('{"t":[new Error("Error message.")]}');
+        });
+
+        it('should deserialize Error', function () {
+            var d = eval(serialize(new Error('Error message.')));
+            expect(d).to.be.a('Error');
+            expect(d.message).to.equal('Error message.');
+        });
+    });
+
     describe('XSS', function () {
         it('should encode unsafe HTML chars to Unicode', function () {
             expect(serialize('</script>')).to.equal('"\\u003C\\u002Fscript\\u003E"');

@@ -11,7 +11,7 @@ var randomBytes = require('randombytes');
 // Generate an internal UID to make the regexp pattern harder to guess.
 var UID_LENGTH          = 16;
 var UID                 = generateUID();
-var PLACE_HOLDER_REGEXP = new RegExp('(\\\\)?"@__(F|R|D|M|S|A|U|I|B|L)-' + UID + '-(\\d+)__@"', 'g');
+var PLACE_HOLDER_REGEXP = new RegExp('(\\\\)?"@__(F|R|D|M|S|A|U|I|B|L|E)-' + UID + '-(\\d+)__@"', 'g');
 
 var IS_NATIVE_CODE_REGEXP = /\{\s*\[native code\]\s*\}/g;
 var IS_PURE_FUNCTION = /function.*?\(/;
@@ -73,6 +73,7 @@ module.exports = function serialize(obj, options) {
     var infinities= [];
     var bigInts = [];
     var urls = [];
+    var errors = [];
 
     // Returns placeholders for functions and regexps (identified by index)
     // which are later replaced by their string representation.
@@ -118,6 +119,10 @@ module.exports = function serialize(obj, options) {
 
             if(origValue instanceof URL) {
                 return '@__L-' + UID + '-' + (urls.push(origValue) - 1) + '__@';
+            }
+
+            if(origValue instanceof Error) {
+                return '@__E-' + UID + '-' + (errors.push(origValue) - 1) + '__@';
             }
         }
 
@@ -210,7 +215,7 @@ module.exports = function serialize(obj, options) {
         str = str.replace(UNSAFE_CHARS_REGEXP, escapeUnsafeChars);
     }
 
-    if (functions.length === 0 && regexps.length === 0 && dates.length === 0 && maps.length === 0 && sets.length === 0 && arrays.length === 0 && undefs.length === 0 && infinities.length === 0 && bigInts.length === 0 && urls.length === 0) {
+    if (functions.length === 0 && regexps.length === 0 && dates.length === 0 && maps.length === 0 && sets.length === 0 && arrays.length === 0 && undefs.length === 0 && infinities.length === 0 && bigInts.length === 0 && urls.length === 0 && errors.length === 0) {
         return str;
     }
 
@@ -259,6 +264,10 @@ module.exports = function serialize(obj, options) {
 
         if (type === 'L') {
             return "new URL(\"" + urls[valueIndex].toString() + "\")"; 
+        }
+
+        if (type === 'E') {
+            return "new Error(\"" + errors[valueIndex].message + "\")"; 
         }
 
         var fn = functions[valueIndex];
