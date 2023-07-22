@@ -1,22 +1,8 @@
 /* global describe, it, beforeEach */
 'use strict';
 
-// temporarily monkeypatch `crypto.randomBytes` so we'll have a
-// predictable UID for our tests
-var crypto = require('crypto');
-var oldRandom = crypto.randomBytes;
-crypto.randomBytes = function(len, cb) {
-    var buf = Buffer.alloc(len);
-    buf.fill(0x00);
-    if (cb)
-        cb(null, buf);
-    return buf;
-};
-
 var serialize = require('../../'),
     expect    = require('chai').expect;
-
-crypto.randomBytes = oldRandom;
 
 describe('serialize( obj )', function () {
     it('should be a function', function () {
@@ -535,7 +521,7 @@ describe('serialize( obj )', function () {
                 fn_arrow: () => {
                     return true;
                 }
-            };            
+            };
             var obj2 = {
                 num: 123,
                 str: 'str',
