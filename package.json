@@ -23,14 +23,14 @@
   "bugs": {
     "url": "https://github.com/yahoo/serialize-javascript/issues"
   },
+  "engines": {
+    "node": ">=16.7"
+  },
   "homepage": "https://github.com/yahoo/serialize-javascript",
   "devDependencies": {
     "benchmark": "^2.1.4",
     "chai": "^4.1.0",
     "mocha": "^10.0.0",
     "nyc": "^15.0.0"
-  },
-  "dependencies": {
-    "randombytes": "^2.1.0"
   }
 }
