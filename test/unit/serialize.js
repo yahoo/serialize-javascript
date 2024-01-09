@@ -461,8 +461,8 @@ describe('serialize( obj )', function () {
     describe('URL', function () {
         it('should serialize URL', function () {
             var u = new URL('https://x.com/')
-            expect(serialize(u)).to.equal('new URL("https://x.com/")');
-            expect(serialize({t: [u]})).to.be.a('string').equal('{"t":[new URL("https://x.com/")]}');
+            expect(serialize(u)).to.equal('new URL("https:\\u002F\\u002Fx.com\\u002F")');
+            expect(serialize({t: [u]})).to.be.a('string').equal('{"t":[new URL("https:\\u002F\\u002Fx.com\\u002F")]}');
         });
 
         it('should deserialize URL', function () {
@@ -477,6 +477,8 @@ describe('serialize( obj )', function () {
             expect(serialize('</script>')).to.equal('"\\u003C\\u002Fscript\\u003E"');
             expect(JSON.parse(serialize('</script>'))).to.equal('</script>');
             expect(eval(serialize('</script>'))).to.equal('</script>');
+            expect(serialize(new URL('x:</script>'))).to.equal('new URL("x:\\u003C\\u002Fscript\\u003E")');
+            expect(eval(serialize(new URL('x:</script>'))).href).to.equal('x:</script>');
         });
     });
 

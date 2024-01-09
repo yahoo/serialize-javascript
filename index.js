@@ -258,7 +258,7 @@ module.exports = function serialize(obj, options) {
         }
 
         if (type === 'L') {
-            return "new URL(\"" + urls[valueIndex].toString() + "\")"; 
+            return "new URL(" + serialize(urls[valueIndex].toString(), options) + ")";
         }
 
         var fn = functions[valueIndex];
