@@ -1,6 +1,6 @@
 {
   "name": "serialize-javascript",
-  "version": "6.0.1",
+  "version": "6.0.2",
   "description": "Serialize JavaScript to a superset of JSON that includes regular expressions and functions.",
   "main": "index.js",
   "scripts": {
