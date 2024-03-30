@@ -35,12 +35,20 @@ function escapeUnsafeChars(unsafeChar) {
 }
 
 function generateUID() {
-    var bytes = randomBytes(UID_LENGTH);
-    var result = '';
-    for(var i=0; i<UID_LENGTH; ++i) {
-        result += bytes[i].toString(16);
+    try {
+        var bytes = randomBytes(UID_LENGTH);
+        var result = '';
+        for(var i=0; i<UID_LENGTH; ++i) {
+            result += bytes[i].toString(16);
+        }
+        return result;
+    } catch (e) {
+        return generateFallbackUID();
     }
-    return result;
+}
+
+function generateFallbackUID() {
+    return Math.floor(Math.random() * 0x10000000000).toString(16);
 }
 
 function deleteFunctions(obj){
