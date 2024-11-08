@@ -554,6 +554,19 @@ describe('serialize( obj )', function () {
         });
     });
 
+    describe('NaN', function () {
+        it('should serialize NaN', function () {
+            expect(serialize(NaN)).to.equal('NaN');
+            expect(serialize({t: [NaN]})).to.be.a('string').equal('{"t":[NaN]}');
+        });
+
+        it('should deserialize NaN', function () {
+            var d = eval(serialize(NaN));
+            expect(d).to.be.a('Number');
+            expect(isNaN(d)).to.equal(true);
+        });
+    });
+
     describe('backwards-compatability', function () {
         it('should accept `space` as the second argument', function () {
             expect(serialize([1], 0)).to.equal('[1]');
