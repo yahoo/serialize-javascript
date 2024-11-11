@@ -1,16 +1,9 @@
 Serialize JavaScript
 ====================
-
 Serialize JavaScript to a _superset_ of JSON that includes regular expressions, dates and functions.
-
-[![npm Version][npm-badge]][npm]
-[![Dependency Status][david-badge]][david]
-![Test](https://github.com/yahoo/serialize-javascript/workflows/Test/badge.svg)
+This library is a fork of the [serialize-javacript] library that addresses browser compatibility by using the native crypto module.
 
 ## Overview
-
-The code in this package began its life as an internal module to [express-state][]. To expand its usefulness, it now lives as `serialize-javascript` — an independent package on npm.
-
 You're probably wondering: **What about `JSON.stringify()`!?** We've found that sometimes we need to serialize JavaScript **functions**, **regexps**, **dates**, **sets** or **maps**. A great example is a web app that uses client-side URL routing where the route definitions are regexps that need to be shared from the server to the client. But this module is also great for communicating between node processes.
 
 The string returned from this package's single export function is literal JavaScript which can be saved to a `.js` file, or be embedded into an HTML document by making the content of a `<script>` element.
@@ -133,11 +126,7 @@ function deserialize(serializedJavascript){
 This software is free to use under the Yahoo! Inc. BSD license.
 See the [LICENSE file][LICENSE] for license text and copyright information.
 
-
-[npm]: https://www.npmjs.org/package/serialize-javascript
-[npm-badge]: https://img.shields.io/npm/v/serialize-javascript.svg?style=flat-square
-[david]: https://david-dm.org/yahoo/serialize-javascript
-[david-badge]: https://img.shields.io/david/yahoo/serialize-javascript.svg?style=flat-square
-[express-state]: https://github.com/yahoo/express-state
+[serialize-javacript]: https://github.com/yahoo/serialize-javascript
+[npm]: https://www.npmjs.org/package/@namecheap/serialize-javascript
 [JSON.stringify]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify
-[LICENSE]: https://github.com/yahoo/serialize-javascript/blob/main/LICENSE
+[LICENSE]: https://github.com/namecheap/serialize-javascript/blob/main/LICENSE
