@@ -1,11 +1,12 @@
 {
   "name": "@namecheap/serialize-javascript",
-  "version": "6.1.0",
+  "version": "0.0.0",
   "description": "Serialize JavaScript to a superset of JSON that includes regular expressions and functions.",
   "main": "index.js",
   "scripts": {
     "benchmark": "node -v && node test/benchmark/serialize.js",
-    "test": "nyc --reporter=lcov mocha test/unit"
+    "test": "nyc mocha './{,!(node_modules)/**}/*.spec.js' --forbid-only --forbid-pending --reporter=\"mochawesome\" --reporter-options=\"reportDir=./test-results/mocha/,reportFilename=index.html\"",
+    "prepare": "husky"
   },
   "repository": {
     "type": "git",
@@ -24,11 +25,19 @@
     "url": "https://github.com/namecheap/serialize-javascript/issues"
   },
   "homepage": "https://github.com/namecheap/serialize-javascript",
+  "dependencies": {},
   "devDependencies": {
     "benchmark": "^2.1.4",
     "chai": "^4.1.0",
-    "mocha": "^10.0.0",
-    "nyc": "^17.0.0"
+    "mocha": "^10.7.3",
+    "mochawesome": "^7.1.3",
+    "nyc": "^17.0.0",
+    "@commitlint/cli": "^19.5.0",
+    "@commitlint/config-conventional": "^19.5.0",
+    "husky": "^9.1.6",
+    "semantic-release": "^24.1.3"
   },
-  "dependencies": {}
+  "overrides": {
+    "conventional-changelog-conventionalcommits": ">= 8.0.0"
+  }
 }

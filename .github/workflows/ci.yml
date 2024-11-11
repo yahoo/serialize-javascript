@@ -1,0 +1,53 @@
+name: CI
+
+on:
+    push:
+        branches:
+            - master
+        tags-ignore:
+            - "**"
+    pull_request:
+        branches:
+            - "**"
+
+jobs:
+    build:
+        name: Build
+        runs-on: ubuntu-latest
+
+        strategy:
+            matrix:
+                node-version: [16.x, 18.x, 20.x]
+
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                fetch-depth: 0
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ matrix.node-version }}
+                  cache: "npm"
+            - run: npm ci
+            - if: github.event_name == 'pull_request'
+              name: Lint commit messages
+              run: npx commitlint --from ${{ github.event.pull_request.head.sha }}~${{ github.event.pull_request.commits }} --to ${{ github.event.pull_request.head.sha }} --verbose
+            - run: npm test
+    publish:
+        name: "Publish"
+        needs: build
+        runs-on: ubuntu-latest
+        environment: npm_publish
+        if: github.ref == 'refs/heads/master'
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 20.x
+                  cache: "npm"
+            - run: npm ci
+            - name: Publish new version
+              env:
+                  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: npx semantic-release
