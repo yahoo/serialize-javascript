@@ -1,8 +1,4 @@
-artifacts/
-coverage/
 test/
 .gitignore
 .npmignore
-.nyc_output
-.vscode
 .github
