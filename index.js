@@ -11,7 +11,7 @@ var randomBytes = require('randombytes');
 // Generate an internal UID to make the regexp pattern harder to guess.
 var UID_LENGTH          = 16;
 var UID                 = generateUID();
-var PLACE_HOLDER_REGEXP = new RegExp('(\\\\)?"@__(F|R|D|M|S|A|U|I|B|L|N)-' + UID + '-(\\d+)__@"', 'g');
+var PLACE_HOLDER_REGEXP = new RegExp('(\\\\)?"@__(F|R|D|M|S|A|U|I|B|L|N|E)-' + UID + '-(\\d+)__@"', 'g');
 
 var IS_NATIVE_CODE_REGEXP = /\{\s*\[native code\]\s*\}/g;
 var IS_PURE_FUNCTION = /function.*?\(/;
@@ -74,6 +74,7 @@ module.exports = function serialize(obj, options) {
     var bigInts = [];
     var urls = [];
     var nans = [];
+    var errors = [];
 
     // Returns placeholders for functions and regexps (identified by index)
     // which are later replaced by their string representation.
@@ -112,6 +113,10 @@ module.exports = function serialize(obj, options) {
 
             if(origValue instanceof Set) {
                 return '@__S-' + UID + '-' + (sets.push(origValue) - 1) + '__@';
+            }
+
+            if (origValue instanceof Error) {
+                return '@__E-' + UID + '-' + (errors.push(origValue) - 1) + '__@';
             }
 
             if(origValue instanceof Array) {
@@ -215,7 +220,7 @@ module.exports = function serialize(obj, options) {
         str = str.replace(UNSAFE_CHARS_REGEXP, escapeUnsafeChars);
     }
 
-    if (functions.length === 0 && regexps.length === 0 && dates.length === 0 && maps.length === 0 && sets.length === 0 && arrays.length === 0 && undefs.length === 0 && infinities.length === 0 && bigInts.length === 0 && urls.length === 0 && nans.length === 0) {
+    if (functions.length === 0 && regexps.length === 0 && dates.length === 0 && maps.length === 0 && sets.length === 0 && arrays.length === 0 && undefs.length === 0 && infinities.length === 0 && bigInts.length === 0 && urls.length === 0 && nans.length === 0 && errors.length === 0) {
         return str;
     }
 
@@ -268,6 +273,13 @@ module.exports = function serialize(obj, options) {
 
         if (type === 'N') {
             return 'NaN';
+        }
+
+        if (type === 'E') {
+            return "new Error(" + serialize({
+                name: errors[valueIndex].name,
+                message: errors[valueIndex].message
+            }, options) + ")";
         }
 
         var fn = functions[valueIndex];
