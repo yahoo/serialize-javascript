@@ -6,8 +6,6 @@ See the accompanying LICENSE file for terms.
 
 'use strict';
 
-var randomBytes = require('randombytes');
-
 // Generate an internal UID to make the regexp pattern harder to guess.
 var UID_LENGTH          = 16;
 var UID                 = generateUID();
@@ -35,7 +33,20 @@ function escapeUnsafeChars(unsafeChar) {
 }
 
 function generateUID() {
-    var bytes = randomBytes(UID_LENGTH);
+    var bytes;
+    if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+        bytes = crypto.getRandomValues(new Uint8Array(UID_LENGTH));
+    } else {
+        try {
+            var nodeCrypto = require('crypto');
+            bytes = nodeCrypto.randomBytes(UID_LENGTH);
+        } catch {
+            // We'll throw an error later
+        }
+    }
+    if (!bytes) {
+        throw new Error('Secure random number generation is not supported by this platform.');
+    }
     var result = '';
     for(var i=0; i<UID_LENGTH; ++i) {
         result += bytes[i].toString(16);
