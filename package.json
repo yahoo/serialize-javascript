@@ -26,5 +26,8 @@
   "homepage": "https://github.com/yahoo/serialize-javascript",
   "devDependencies": {
     "benchmark": "^2.1.4"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
 }

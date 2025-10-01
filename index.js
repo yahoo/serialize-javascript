@@ -33,20 +33,7 @@ function escapeUnsafeChars(unsafeChar) {
 }
 
 function generateUID() {
-    var bytes;
-    if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
-        bytes = crypto.getRandomValues(new Uint8Array(UID_LENGTH));
-    } else {
-        try {
-            var nodeCrypto = require('crypto');
-            bytes = nodeCrypto.randomBytes(UID_LENGTH);
-        } catch {
-            // We'll throw an error later
-        }
-    }
-    if (!bytes) {
-        throw new Error('Secure random number generation is not supported by this platform.');
-    }
+    var bytes = crypto.getRandomValues(new Uint8Array(UID_LENGTH));
     var result = '';
     for(var i=0; i<UID_LENGTH; ++i) {
         result += bytes[i].toString(16);
