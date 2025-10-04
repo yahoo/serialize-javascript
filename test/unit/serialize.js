@@ -3,20 +3,6 @@ const { deepStrictEqual, strictEqual, throws } = require('node:assert');
 
 var serialize = require('../../');
 
-// temporarily monkeypatch `crypto.randomBytes` so we'll have a
-// predictable UID for our tests
-var crypto = require('crypto');
-var oldRandom = crypto.randomBytes;
-crypto.randomBytes = function(len, cb) {
-    var buf = Buffer.alloc(len);
-    buf.fill(0x00);
-    if (cb)
-        cb(null, buf);
-    return buf;
-};
-
-crypto.randomBytes = oldRandom;
-
 describe('serialize( obj )', function () {
     it('should be a function', function () {
         strictEqual(typeof serialize, 'function');

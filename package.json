@@ -27,7 +27,7 @@
   "devDependencies": {
     "benchmark": "^2.1.4"
   },
-  "dependencies": {
-    "randombytes": "^2.1.0"
+  "engines": {
+    "node": ">=20.0.0"
   }
 }
