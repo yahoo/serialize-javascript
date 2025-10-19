@@ -53,7 +53,11 @@ function deleteFunctions(obj){
     }
 }
 
-module.exports = function serialize(obj, options) {
+module.exports.deserialize = function(objStr){
+    return new Function("return " + objStr)();
+};
+
+module.exports.serialize = function serialize(obj, options) {
     options || (options = {});
 
     // Backwards-compatibility for `space` as the second argument.
