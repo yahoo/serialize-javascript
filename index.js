@@ -138,44 +138,278 @@ module.exports = function serialize(obj, options) {
         return value;
     }
 
-    function serializeFunc(fn) {
+    function serializeFunc(fn, options) {
       var serializedFn = fn.toString();
       if (IS_NATIVE_CODE_REGEXP.test(serializedFn)) {
           throw new TypeError('Serializing native function: ' + fn.name);
       }
 
-      // pure functions, example: {key: function() {}}
-      if(IS_PURE_FUNCTION.test(serializedFn)) {
-          return serializedFn;
+      // If no space option, return original behavior
+      if (!options || !options.space) {
+        // pure functions, example: {key: function() {}}
+        if(IS_PURE_FUNCTION.test(serializedFn)) {
+            return serializedFn;
+        }
+
+        // arrow functions, example: arg1 => arg1+5
+        if(IS_ARROW_FUNCTION.test(serializedFn)) {
+            return serializedFn;
+        }
+
+        var argsStartsAt = serializedFn.indexOf('(');
+        var def = serializedFn.substr(0, argsStartsAt)
+          .trim()
+          .split(' ')
+          .filter(function(val) { return val.length > 0 });
+
+        var nonReservedSymbols = def.filter(function(val) {
+          return RESERVED_SYMBOLS.indexOf(val) === -1
+        });
+
+        // enhanced literal objects, example: {key() {}}
+        if(nonReservedSymbols.length > 0) {
+            return (def.indexOf('async') > -1 ? 'async ' : '') + 'function'
+              + (def.join('').indexOf('*') > -1 ? '*' : '')
+              + serializedFn.substr(argsStartsAt);
+        }
+
+        // arrow functions
+        return serializedFn;
       }
 
-      // arrow functions, example: arg1 => arg1+5
-      if(IS_ARROW_FUNCTION.test(serializedFn)) {
-          return serializedFn;
-      }
-
-      var argsStartsAt = serializedFn.indexOf('(');
-      var def = serializedFn.substr(0, argsStartsAt)
-        .trim()
-        .split(' ')
-        .filter(function(val) { return val.length > 0 });
-
-      var nonReservedSymbols = def.filter(function(val) {
-        return RESERVED_SYMBOLS.indexOf(val) === -1
-      });
-
-      // enhanced literal objects, example: {key() {}}
-      if(nonReservedSymbols.length > 0) {
-          return (def.indexOf('async') > -1 ? 'async ' : '') + 'function'
-            + (def.join('').indexOf('*') > -1 ? '*' : '')
-            + serializedFn.substr(argsStartsAt);
-      }
-
-      // arrow functions
-      return serializedFn;
+      // Format function body with space option
+      return formatFunctionWithSpace(serializedFn, options.space);
     }
 
-    // Check if the parameter is function
+    function formatFunctionWithSpace(serializedFn, space) {
+      // Determine indentation unit
+      var indentUnit;
+      if (typeof space === 'number') {
+        indentUnit = ' '.repeat(space);
+      } else if (typeof space === 'string') {
+        indentUnit = space;
+      } else {
+        return serializedFn; // fallback to original
+      }
+
+      // Find the function body opening brace (not parameter destructuring braces)
+      var bodyStartBraceIndex = -1;
+      var parenDepth = 0;
+      var braceDepth = 0;
+      
+      for (var i = 0; i < serializedFn.length; i++) {
+        var char = serializedFn[i];
+        if (char === '(') {
+          parenDepth++;
+        } else if (char === ')') {
+          parenDepth--;
+          // After closing the parameter list, the next { is the function body
+          if (parenDepth === 0) {
+            for (var j = i + 1; j < serializedFn.length; j++) {
+              if (serializedFn[j] === '{') {
+                bodyStartBraceIndex = j;
+                break;
+              } else if (serializedFn[j] !== ' ' && serializedFn[j] !== '=' && serializedFn[j] !== '>') {
+                // Non-space/arrow character before brace, not a function body brace
+                break;
+              }
+            }
+            break;
+          }
+        }
+      }
+      
+      var closeBraceIndex = serializedFn.lastIndexOf('}');
+      
+      if (bodyStartBraceIndex === -1 || closeBraceIndex === -1 || bodyStartBraceIndex >= closeBraceIndex) {
+        return serializedFn; // No function body braces found, return original
+      }
+
+      var signature = serializedFn.substring(0, bodyStartBraceIndex).trim();
+      var body = serializedFn.substring(bodyStartBraceIndex + 1, closeBraceIndex).trim();
+      
+      // Clean up signature: ensure proper spacing
+      // For arrow functions, add space around =>
+      if (signature.includes('=>')) {
+        signature = signature.replace(/\s*=>\s*/, ' => ');
+      }
+      
+      // Ensure space before opening brace
+      if (!signature.endsWith(' ')) {
+        signature += ' ';
+      }
+      
+      // If body is empty, format minimally
+      if (!body) {
+        return signature + '{\n' + indentUnit.repeat(2) + '}';
+      }
+
+      // Format the function body with proper indentation and spacing
+      var formattedBody = formatSimpleFunctionBody(body, indentUnit);
+      
+      // Ensure we don't double-add closing braces
+      var lines = formattedBody.split('\n');
+      var lastNonEmptyIndex = lines.length - 1;
+      while (lastNonEmptyIndex >= 0 && !lines[lastNonEmptyIndex].trim()) {
+        lastNonEmptyIndex--;
+      }
+      
+      if (lastNonEmptyIndex >= 0 && lines[lastNonEmptyIndex].trim() === '}') {
+        // Remove the last closing brace line
+        lines.splice(lastNonEmptyIndex, 1);
+        formattedBody = lines.join('\n');
+      }
+      
+      return signature + '{\n' + formattedBody + '\n' + indentUnit + '}';
+    }
+
+    function formatSimpleFunctionBody(body, indentUnit) {
+      // Enhanced function body formatter that handles nested structures
+      var baseIndent = indentUnit.repeat(2); // Functions are already inside objects, so depth 2
+      
+      // First, add spaces around operators and keywords, being careful about arrow functions
+      var formatted = body
+        // Protect arrow functions from being split
+        .replace(/=>/g, '___ARROW___')
+        // Clean up multiple spaces first
+        .replace(/\s+/g, ' ')
+        // Add spaces around operators (but not === or !==)
+        .replace(/([^=!<>])\s*=\s*([^=])/g, '$1 = $2')
+        .replace(/([^=])\s*===\s*([^=])/g, '$1 === $2')
+        .replace(/([^!])\s*!==\s*([^=])/g, '$1 !== $2')
+        .replace(/([^|])\s*\|\|\s*([^|])/g, '$1 || $2')
+        .replace(/([^&])\s*&&\s*([^&])/g, '$1 && $2')
+        // Add spaces around arithmetic operators
+        .replace(/([^\s*])\s*\*\s*([^\s*])/g, '$1 * $2')
+        .replace(/([^\s+])\s*\+\s*([^\s+])/g, '$1 + $2')
+        .replace(/([^\s-])\s*-\s*([^\s-])/g, '$1 - $2')
+        .replace(/([^\s/])\s*\/\s*([^\s/])/g, '$1 / $2')
+        // Add spaces around comparison operators
+        .replace(/([^\s>])\s*>\s*([^\s>=])/g, '$1 > $2')
+        .replace(/([^\s<])\s*<\s*([^\s<=])/g, '$1 < $2')
+        .replace(/\s*>=\s*(?![>])/g, ' >= ')
+        .replace(/\s*<=\s*(?![<])/g, ' <= ')
+        // Add spaces after commas
+        .replace(/,(?!\s)/g, ', ')
+        // Add space after control keywords and before braces
+        .replace(/\b(if|for|while)\s*\(/g, '$1 (')
+        .replace(/\)\s*\{/g, ') {')
+        .replace(/\belse\s*\{/g, 'else {')
+        .replace(/\breturn\s+([^\s])/g, 'return $1')
+        // Restore arrow functions
+        .replace(/___ARROW___/g, ' => ');
+
+      // Parse and format the statements with proper line breaks and nesting
+      return formatCodeWithNesting(formatted, baseIndent, indentUnit);
+    }
+
+    function formatCodeWithNesting(code, baseIndent, indentUnit) {
+      var result = '';
+      var lines = [];
+      var current = '';
+      var braceDepth = 0;
+      var inString = false;
+      var stringChar = '';
+      
+      // First pass: break into logical lines, handling } else { pattern
+      for (var i = 0; i < code.length; i++) {
+        var char = code[i];
+        
+        // Handle strings
+        if (!inString && (char === '"' || char === "'" || char === '`')) {
+          inString = true;
+          stringChar = char;
+        } else if (inString && char === stringChar && code[i-1] !== '\\') {
+          inString = false;
+          stringChar = '';
+        }
+        
+        if (!inString) {
+          if (char === '{') {
+            current += char;
+            lines.push(current.trim());
+            current = '';
+            braceDepth++;
+            continue;
+          } else if (char === '}') {
+            if (current.trim()) {
+              lines.push(current.trim());
+            }
+            braceDepth--;
+            
+            // Check for } else { pattern
+            var nextNonWhitespace = '';
+            var j = i + 1;
+            while (j < code.length && /\s/.test(code[j])) {
+              j++;
+            }
+            if (j < code.length - 4 && code.substring(j, j + 4) === 'else') {
+              // Skip to after 'else'
+              j += 4;
+              while (j < code.length && /\s/.test(code[j])) {
+                j++;
+              }
+              if (j < code.length && code[j] === '{') {
+                // This is } else {
+                lines.push('} else {');
+                i = j; // Skip to the {
+                braceDepth++;
+                current = '';
+                continue;
+              }
+            }
+            
+            lines.push('}');
+            current = '';
+            continue;
+          } else if (char === ';') {
+            current += char;
+            lines.push(current.trim());
+            current = '';
+            continue;
+          }
+        }
+        
+        current += char;
+      }
+      
+      // Add any remaining content
+      if (current.trim()) {
+        lines.push(current.trim());
+      }
+      
+      // Second pass: apply proper indentation
+      var currentDepth = 2; // Start at depth 2 for function bodies (object has 1, function has 2)
+      for (var k = 0; k < lines.length; k++) {
+        var line = lines[k].trim();
+        if (!line) continue;
+        
+        // Adjust depth for closing braces
+        if (line === '}' || line.startsWith('}')) {
+          currentDepth--;
+        }
+        
+        // Apply indentation
+        result += indentUnit.repeat(currentDepth) + line;
+        
+        // Add newline except for last line
+        if (k < lines.length - 1) {
+          result += '\n';
+        }
+        
+        // Adjust depth for opening braces
+        if (line.endsWith('{')) {
+          currentDepth++;
+        }
+        
+        // Add semicolon if missing (except for braces)
+        if (!line.endsWith(';') && !line.endsWith('{') && line !== '}' && !line.startsWith('}')) {
+          result = result.replace(/([^;}])$/, '$1;');
+        }
+      }
+      
+      return result;
+    }    // Check if the parameter is function
     if (options.ignoreFunction && typeof obj === "function") {
         obj = undefined;
     }
@@ -261,6 +495,6 @@ module.exports = function serialize(obj, options) {
 
         var fn = functions[valueIndex];
 
-        return serializeFunc(fn);
+        return serializeFunc(fn, options);
     });
 }

@@ -567,6 +567,70 @@ describe('serialize( obj )', function () {
               '{"num":123,"str":"str"}'
             );
         });
+
+        it('should apply `space` option to function bodies (Issue #195)', function () {
+            // Test compact function without space option
+            var objWithFunction = {
+                isSupported: function({filepath}){const basename=require('path').basename(filepath);return basename===".env"||basename.startsWith(".env.")}
+            };
+            
+            var withoutSpace = serialize(objWithFunction);
+            strictEqual(withoutSpace, '{"isSupported":function({filepath}){const basename=require(\'path\').basename(filepath);return basename===".env"||basename.startsWith(".env.")}}');
+            
+            // Test function body should be formatted with space: 2
+            var withSpace2 = serialize(objWithFunction, { space: 2 });
+            var expected = '{\n  "isSupported": function({filepath}) {\n    const basename = require(\'path\').basename(filepath);\n    return basename === ".env" || basename.startsWith(".env.");\n  }\n}';
+            strictEqual(withSpace2, expected);
+            
+            // Test function body should be formatted with space: 4  
+            var withSpace4 = serialize(objWithFunction, { space: 4 });
+            var expectedSpace4 = '{\n    "isSupported": function({filepath}) {\n        const basename = require(\'path\').basename(filepath);\n        return basename === ".env" || basename.startsWith(".env.");\n    }\n}';
+            strictEqual(withSpace4, expectedSpace4);
+        });
+
+        it('should apply `space` option to named function bodies', function () {
+            var objWithNamedFunction = {
+                process: function processData(data) {const result=data.map(x=>x*2);if(result.length>0){return result.filter(x=>x>10);}return [];}
+            };
+            
+            var withSpace2 = serialize(objWithNamedFunction, { space: 2 });
+            var expected = '{\n  "process": function processData(data) {\n    const result = data.map(x => x * 2);\n    if (result.length > 0) {\n      return result.filter(x => x > 10);\n    }\n    return [];\n  }\n}';
+            strictEqual(withSpace2, expected);
+        });
+
+        it('should apply `space` option to arrow function bodies', function () {
+            var objWithArrowFunction = {
+                transform: (x)=>{const doubled=x*2;if(doubled>10){return doubled;}return 0;}
+            };
+            
+            var withSpace2 = serialize(objWithArrowFunction, { space: 2 });
+            var expected = '{\n  "transform": (x) => {\n    const doubled = x * 2;\n    if (doubled > 10) {\n      return doubled;\n    }\n    return 0;\n  }\n}';
+            strictEqual(withSpace2, expected);
+        });
+
+        it('should apply `space` option to multiple functions in same object', function () {
+            var objWithMultipleFunctions = {
+                fn1: function(){return 1;},
+                fn2: ()=>{return 2;},
+                fn3: function named(){return 3;}
+            };
+            
+            var withSpace2 = serialize(objWithMultipleFunctions, { space: 2 });
+            var expected = '{\n  "fn1": function() {\n    return 1;\n  },\n  "fn2": () => {\n    return 2;\n  },\n  "fn3": function named() {\n    return 3;\n  }\n}';
+            strictEqual(withSpace2, expected);
+        });
+
+        it('should handle edge cases with space option and functions', function () {
+            // Test with string space option
+            var objWithFunction = { fn: function(){return true;} };
+            var withStringSpace = serialize(objWithFunction, { space: '  ' });
+            var expected = '{\n  "fn": function() {\n    return true;\n  }\n}';
+            strictEqual(withStringSpace, expected);
+            
+            // Test with no space (should not format function bodies)
+            var withoutSpaceOption = serialize(objWithFunction);
+            strictEqual(withoutSpaceOption, '{"fn":function(){return true;}}');
+        });
     });
 
     describe('backwards-compatability', function () {
