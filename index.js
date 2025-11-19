@@ -6,6 +6,8 @@ See the accompanying LICENSE file for terms.
 
 'use strict';
 
+var crypto = require('crypto');
+
 // Generate an internal UID to make the regexp pattern harder to guess.
 var UID_LENGTH          = 16;
 var UID                 = generateUID();
@@ -15,6 +17,8 @@ var IS_NATIVE_CODE_REGEXP = /\{\s*\[native code\]\s*\}/g;
 var IS_PURE_FUNCTION = /function.*?\(/;
 var IS_ARROW_FUNCTION = /.*?=>.*?/;
 var UNSAFE_CHARS_REGEXP   = /[<>\/\u2028\u2029]/g;
+// Regex to match </script> and </SCRIPT> (case-insensitive) for XSS protection
+var SCRIPT_CLOSE_REGEXP = /<\/script>/gi;
 
 var RESERVED_SYMBOLS = ['*', 'async'];
 
@@ -32,8 +36,23 @@ function escapeUnsafeChars(unsafeChar) {
     return ESCAPED_CHARS[unsafeChar];
 }
 
+// Escape function body for XSS protection while preserving arrow function syntax
+function escapeFunctionBody(str) {
+    // Escape </script> sequences (case-insensitive) - the main XSS risk
+    // This must be done first before other replacements
+    str = str.replace(SCRIPT_CLOSE_REGEXP, function(match) {
+        return '\\u003C\\u002Fscript\\u003E';
+    });
+    // Also escape </SCRIPT> and other case variations
+    str = str.replace(/<\/SCRIPT>/g, '\\u003C\\u002FSCRIPT\\u003E');
+    // Escape line terminators (these are always unsafe)
+    str = str.replace(/\u2028/g, '\\u2028');
+    str = str.replace(/\u2029/g, '\\u2029');
+    return str;
+}
+
 function generateUID() {
-    var bytes = crypto.getRandomValues(new Uint8Array(UID_LENGTH));
+    var bytes = crypto.randomBytes(UID_LENGTH);
     var result = '';
     for(var i=0; i<UID_LENGTH; ++i) {
         result += bytes[i].toString(16);
@@ -138,10 +157,16 @@ module.exports = function serialize(obj, options) {
         return value;
     }
 
-    function serializeFunc(fn) {
+    function serializeFunc(fn, options) {
       var serializedFn = fn.toString();
       if (IS_NATIVE_CODE_REGEXP.test(serializedFn)) {
           throw new TypeError('Serializing native function: ' + fn.name);
+      }
+
+      // Escape unsafe HTML characters in function body for XSS protection
+      // This must preserve arrow function syntax (=>) while escaping </script>
+      if (options && options.unsafe !== true) {
+          serializedFn = escapeFunctionBody(serializedFn);
       }
 
       // pure functions, example: {key: function() {}}
@@ -261,6 +286,6 @@ module.exports = function serialize(obj, options) {
 
         var fn = functions[valueIndex];
 
-        return serializeFunc(fn);
+        return serializeFunc(fn, options);
     });
 }
