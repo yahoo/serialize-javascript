@@ -52,7 +52,8 @@ function escapeFunctionBody(str) {
 }
 
 function generateUID() {
-    var bytes = crypto.randomBytes(UID_LENGTH);
+    var bytes = crypto.getRandomValues(new Uint8Array(UID_LENGTH));
+    crypto.webcrypto.getRandomValues(bytes);
     var result = '';
     for(var i=0; i<UID_LENGTH; ++i) {
         result += bytes[i].toString(16);
