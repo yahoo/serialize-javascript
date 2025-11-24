@@ -6,8 +6,6 @@ See the accompanying LICENSE file for terms.
 
 'use strict';
 
-var crypto = require('crypto');
-
 // Generate an internal UID to make the regexp pattern harder to guess.
 var UID_LENGTH          = 16;
 var UID                 = generateUID();
