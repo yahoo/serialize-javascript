@@ -20,9 +20,9 @@ The string returned from this package's single export function is literal JavaSc
 Please note that serialization for ES6 Sets & Maps requires support for `Array.from` (not available in IE or Node < 0.12), or an `Array.from` polyfill.
 
 > [!WARNING]
-> It may be tempting to use this package as a way to pass arbitrary functions into [worker threads](https://nodejs.org/api/worker_threads.html), since you cannot pass them directly via `postMessage()`. However, passing functions between worker threads is not possible in the general case. This package lets you serialize *some* functions, but it has limitations.
+> It may be tempting to use this package as a way to pass arbitrary functions into [worker threads][], since you cannot pass them directly via `postMessage()`. However, passing functions between worker threads is not possible in the general case. This package lets you serialize *some* functions, but it has limitations.
 >
-> For instance, if a function references something from outside the function body, it will not run properly if serialized and deserialized. This could include [closed-over variables](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Closures) or imports from other packages. For a serialized function to run properly, it must be entirely self-contained.
+> For instance, if a function references something from outside the function body, it will not run properly if serialized and deserialized. This could include [closed-over variables][] or imports from other packages. For a serialized function to run properly, it must be entirely self-contained.
 >
 > In general, it is not possible to send arbitrary JavaScript to a worker thread, and pretend it's running the same way it would run on the main thread. This package doesn't let you do that.
 
@@ -148,3 +148,5 @@ See the [LICENSE file][LICENSE] for license text and copyright information.
 [express-state]: https://github.com/yahoo/express-state
 [JSON.stringify]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify
 [LICENSE]: https://github.com/yahoo/serialize-javascript/blob/main/LICENSE
+[worker threads]: https://nodejs.org/api/worker_threads.html
+[closed-over variables]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Closures
