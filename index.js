@@ -15,8 +15,9 @@ var IS_NATIVE_CODE_REGEXP = /\{\s*\[native code\]\s*\}/g;
 var IS_PURE_FUNCTION = /function.*?\(/;
 var IS_ARROW_FUNCTION = /.*?=>.*?/;
 var UNSAFE_CHARS_REGEXP   = /[<>\/\u2028\u2029]/g;
-// Regex to match </script> and </SCRIPT> (case-insensitive) for XSS protection
-var SCRIPT_CLOSE_REGEXP = /<\/script>/gi;
+// Regex to match </script> and variations (case-insensitive) for XSS protection
+// Matches </script followed by optional whitespace/attributes and >
+var SCRIPT_CLOSE_REGEXP = /<\/script[^>]*>/gi;
 
 var RESERVED_SYMBOLS = ['*', 'async'];
 
@@ -36,13 +37,13 @@ function escapeUnsafeChars(unsafeChar) {
 
 // Escape function body for XSS protection while preserving arrow function syntax
 function escapeFunctionBody(str) {
-    // Escape </script> sequences (case-insensitive) - the main XSS risk
+    // Escape </script> sequences and variations (case-insensitive) - the main XSS risk
+    // Matches </script followed by optional whitespace/attributes and >
     // This must be done first before other replacements
     str = str.replace(SCRIPT_CLOSE_REGEXP, function(match) {
-        return '\\u003C\\u002Fscript\\u003E';
+        // Escape all <, /, and > characters in the closing script tag
+        return match.replace(/</g, '\\u003C').replace(/\//g, '\\u002F').replace(/>/g, '\\u003E');
     });
-    // Also escape </SCRIPT> and other case variations
-    str = str.replace(/<\/SCRIPT>/g, '\\u003C\\u002FSCRIPT\\u003E');
     // Escape line terminators (these are always unsafe)
     str = str.replace(/\u2028/g, '\\u2028');
     str = str.replace(/\u2029/g, '\\u2029');

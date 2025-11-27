@@ -536,6 +536,39 @@ describe('serialize( obj )', function () {
             strictEqual(serialized.includes('</script>'), true);
             strictEqual(serialized.includes('\\u003C\\u002Fscript\\u003E'), false);
         });
+
+        it('should encode </script > with space before >', function () {
+            function fn() { return '</script >'; }
+            var serialized = serialize(fn);
+            strictEqual(serialized.includes('\\u003C\\u002Fscript'), true);
+            strictEqual(serialized.includes('</script '), false);
+            // Verify the function still works after deserialization
+            var deserialized; eval('deserialized = ' + serialized);
+            strictEqual(typeof deserialized, 'function');
+            strictEqual(deserialized(), '</script >');
+        });
+
+        it('should encode </script foo> with attributes', function () {
+            function fn() { return '</script foo>'; }
+            var serialized = serialize(fn);
+            strictEqual(serialized.includes('\\u003C\\u002Fscript'), true);
+            strictEqual(serialized.includes('</script '), false);
+            // Verify the function still works after deserialization
+            var deserialized; eval('deserialized = ' + serialized);
+            strictEqual(typeof deserialized, 'function');
+            strictEqual(deserialized(), '</script foo>');
+        });
+
+        it('should encode </script with tab before >', function () {
+            function fn() { return '</script\t>'; }
+            var serialized = serialize(fn);
+            strictEqual(serialized.includes('\\u003C\\u002Fscript'), true);
+            strictEqual(serialized.includes('</script'), false);
+            // Verify the function still works after deserialization
+            var deserialized; eval('deserialized = ' + serialized);
+            strictEqual(typeof deserialized, 'function');
+            strictEqual(deserialized(), '</script\t>');
+        });
     });
 
     describe('options', function () {
