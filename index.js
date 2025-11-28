@@ -138,44 +138,110 @@ module.exports = function serialize(obj, options) {
         return value;
     }
 
-    function serializeFunc(fn) {
-      var serializedFn = fn.toString();
-      if (IS_NATIVE_CODE_REGEXP.test(serializedFn)) {
-          throw new TypeError('Serializing native function: ' + fn.name);
-      }
+    function serializeFunc(fn, options) {
+        var serializedFn = fn.toString();
+        if (IS_NATIVE_CODE_REGEXP.test(serializedFn)) {
+            throw new TypeError('Serializing native function: ' + fn.name);
+        }
 
-      // pure functions, example: {key: function() {}}
-      if(IS_PURE_FUNCTION.test(serializedFn)) {
-          return serializedFn;
-      }
+        // If no space option, use original behavior
+        if (!options || !options.space) {
+            // pure functions, example: {key: function() {}}
+            if(IS_PURE_FUNCTION.test(serializedFn)) {
+                return serializedFn;
+            }
 
-      // arrow functions, example: arg1 => arg1+5
-      if(IS_ARROW_FUNCTION.test(serializedFn)) {
-          return serializedFn;
-      }
+            // arrow functions, example: arg1 => arg1+5
+            if(IS_ARROW_FUNCTION.test(serializedFn)) {
+                return serializedFn;
+            }
 
-      var argsStartsAt = serializedFn.indexOf('(');
-      var def = serializedFn.substr(0, argsStartsAt)
-        .trim()
-        .split(' ')
-        .filter(function(val) { return val.length > 0 });
+            var argsStartsAt = serializedFn.indexOf('(');
+            var def = serializedFn.substr(0, argsStartsAt)
+              .trim()
+              .split(' ')
+              .filter(function(val) { return val.length > 0 });
 
-      var nonReservedSymbols = def.filter(function(val) {
-        return RESERVED_SYMBOLS.indexOf(val) === -1
-      });
+            var nonReservedSymbols = def.filter(function(val) {
+              return RESERVED_SYMBOLS.indexOf(val) === -1
+            });
 
-      // enhanced literal objects, example: {key() {}}
-      if(nonReservedSymbols.length > 0) {
-          return (def.indexOf('async') > -1 ? 'async ' : '') + 'function'
-            + (def.join('').indexOf('*') > -1 ? '*' : '')
-            + serializedFn.substr(argsStartsAt);
-      }
+            // enhanced literal objects, example: {key() {}}
+            if(nonReservedSymbols.length > 0) {
+                return (def.indexOf('async') > -1 ? 'async ' : '') + 'function'
+                  + (def.join('').indexOf('*') > -1 ? '*' : '')
+                  + serializedFn.substr(argsStartsAt);
+            }
 
-      // arrow functions
-      return serializedFn;
+            // arrow functions
+            return serializedFn;
+        }
+
+        // Format function with space option - much simpler approach
+        return formatFunctionWithSpace(serializedFn, options.space);
     }
 
-    // Check if the parameter is function
+    function formatFunctionWithSpace(serializedFn, space) {
+        // Determine indent string
+        var indent = typeof space === 'number' ? ' '.repeat(space) : (space || '  ');
+        var functionIndent = indent.repeat(2); // Functions are at depth 2 (inside object)
+        
+        // Find function body bounds - need to find the { that's after the parameter list
+        var parenDepth = 0;
+        var bodyStart = -1;
+        
+        for (var i = 0; i < serializedFn.length; i++) {
+            var char = serializedFn[i];
+            if (char === '(') {
+                parenDepth++;
+            } else if (char === ')') {
+                parenDepth--;
+            } else if (char === '{' && parenDepth === 0) {
+                // This is a brace outside of parentheses, likely the function body
+                bodyStart = i;
+                break;
+            }
+        }
+        
+        var bodyEnd = serializedFn.lastIndexOf('}');
+        
+        if (bodyStart === -1 || bodyEnd === -1 || bodyStart >= bodyEnd) {
+            return serializedFn; // No function body found
+        }
+        
+        var signature = serializedFn.substring(0, bodyStart).trim();
+        var body = serializedFn.substring(bodyStart + 1, bodyEnd).trim();
+        
+        // Clean up signature spacing for arrow functions
+        if (signature.includes('=>')) {
+            signature = signature.replace(/\s*=>\s*/, ' => ');
+        }
+        
+        // Handle empty body
+        if (!body) {
+            return signature + ' {\n' + functionIndent + '\n' + indent + '}';
+        }
+        
+        // Minimal formatting: split by semicolons and add basic spacing
+        var statements = body.split(';').filter(function(s) { return s.trim(); });
+        var formattedStatements = statements.map(function(stmt) {
+            var trimmed = stmt.trim();
+            
+            // Basic operator spacing (minimal set to avoid complexity)
+            trimmed = trimmed
+                .replace(/===(?!=)/g, ' === ')
+                .replace(/!==(?!=)/g, ' !== ')
+                .replace(/([^=])=([^=])/g, '$1 = $2')
+                .replace(/\|\|/g, ' || ')
+                .replace(/&&/g, ' && ')
+                .replace(/,(?!\s)/g, ', ')
+                .replace(/\s+/g, ' ');
+            
+            return functionIndent + trimmed + (trimmed ? ';' : '');
+        });
+        
+        return signature + ' {\n' + formattedStatements.join('\n') + '\n' + indent + '}';
+    }    // Check if the parameter is function
     if (options.ignoreFunction && typeof obj === "function") {
         obj = undefined;
     }
@@ -261,6 +327,6 @@ module.exports = function serialize(obj, options) {
 
         var fn = functions[valueIndex];
 
-        return serializeFunc(fn);
+        return serializeFunc(fn, options);
     });
 }
