@@ -258,7 +258,7 @@ module.exports = function serialize(obj, options) {
 
         if (type === 'R') {
             // Sanitize flags to prevent code injection (only allow valid RegExp flag characters)
-            var flags = String(regexps[valueIndex].flags).replace(/[^gimsuyd]/g, '');
+            var flags = String(regexps[valueIndex].flags).replace(/[^gimsuydv]/g, '');
             return "new RegExp(" + serialize(regexps[valueIndex].source) + ", \"" + flags + "\")";
         }
 
