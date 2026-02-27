@@ -316,6 +316,23 @@ describe('serialize( obj )', function () {
             var re = /[<\/script><script>alert('xss')\/\/]/
             expect(serialize(re)).to.be.a('string').equal('new RegExp("[\\u003C\\\\\\u002Fscript\\u003E\\u003Cscript\\u003Ealert(\'xss\')\\\\\\u002F\\\\\\u002F]", "")');
         });
+
+        it('should sanitize RegExp.flags to prevent code injection', function () {
+            // Object that passes instanceof RegExp with attacker-controlled .flags
+            var fakeRegex = Object.create(RegExp.prototype);
+            Object.defineProperty(fakeRegex, 'source', { get: function () { return 'x'; } });
+            Object.defineProperty(fakeRegex, 'flags', {
+                get: function () { return '"+(global.__INJECTED_FLAGS="pwned")+"'; }
+            });
+            fakeRegex.toJSON = function () { return '@placeholder'; };
+            var output = serialize({ re: fakeRegex });
+            // Malicious flags must be stripped; only valid flag chars allowed
+            strictEqual(output.includes('__INJECTED_FLAGS'), false);
+            strictEqual(output.includes('pwned'), false);
+            var obj = eval('obj = ' + output);
+            strictEqual(global.__INJECTED_FLAGS, undefined);
+            delete global.__INJECTED_FLAGS;
+        });
     });
 
     describe('dates', function () {
@@ -341,6 +358,16 @@ describe('serialize( obj )', function () {
             var d = {foo: new Date('2016-04-28T22:02:17.156Z')};
             expect(serialize(d)).to.be.a('string').equal('{"foo":new Date("2016-04-28T22:02:17.156Z")}');
             expect(serialize({t: [d]})).to.be.a('string').equal('{"t":[{"foo":new Date("2016-04-28T22:02:17.156Z")}]}');
+        });
+
+        it('should reject invalid Date ISO string to prevent code injection', function () {
+            var fakeDate = Object.create(Date.prototype);
+            fakeDate.toISOString = function () { return '"+(global.__INJECTED_DATE="pwned")+"'; };
+            fakeDate.toJSON = function () { return '2024-01-01'; };
+            throws(function () {
+                serialize({ d: fakeDate });
+            }, TypeError);
+            strictEqual(global.__INJECTED_DATE, undefined);
         });
     });
 

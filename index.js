@@ -226,11 +226,18 @@ module.exports = function serialize(obj, options) {
         }
 
         if (type === 'D') {
-            return "new Date(\"" + dates[valueIndex].toISOString() + "\")";
+            // Validate ISO string format to prevent code injection via spoofed toISOString()
+            var isoStr = String(dates[valueIndex].toISOString());
+            if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/.test(isoStr)) {
+                throw new TypeError('Invalid Date ISO string');
+            }
+            return "new Date(\"" + isoStr + "\")";
         }
 
         if (type === 'R') {
-            return "new RegExp(" + serialize(regexps[valueIndex].source) + ", \"" + regexps[valueIndex].flags + "\")";
+            // Sanitize flags to prevent code injection (only allow valid RegExp flag characters)
+            var flags = String(regexps[valueIndex].flags).replace(/[^gimsuydv]/g, '');
+            return "new RegExp(" + serialize(regexps[valueIndex].source) + ", \"" + flags + "\")";
         }
 
         if (type === 'M') {
