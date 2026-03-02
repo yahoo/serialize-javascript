@@ -13,6 +13,13 @@ crypto.randomBytes = function(len, cb) {
     return buf;
 };
 
+// require strictEqual and throws for testing that
+// malicious input does not cause code injection
+var _assert = require('node:assert/strict');
+var strictEqual = _assert.strictEqual;
+var throws = _assert.throws;
+
+
 var serialize = require('../../'),
     expect    = require('chai').expect;
 
