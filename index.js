@@ -125,8 +125,8 @@ module.exports = function serialize(obj, options) {
                 return '@__S-' + UID + '-' + (sets.push(origValue) - 1) + '__@';
             }
 
-            if(origValue instanceof Array) {
-                var isSparse = origValue.filter(function(){return true}).length !== origValue.length;
+            if(Array.isArray(origValue)) {
+                var isSparse = Object.keys(origValue).length !== origValue.length;
                 if (isSparse) {
                     return '@__A-' + UID + '-' + (arrays.push(origValue) - 1) + '__@';
                 }

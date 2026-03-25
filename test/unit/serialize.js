@@ -426,6 +426,29 @@ describe('serialize( obj )', function () {
         });
     });
 
+    describe('array-like objects', function () {
+        it('should not hang on array-like objects with large length', function () {
+            var value = Object.create(Array.prototype);
+            value[Symbol.toStringTag] = 'Array';
+            Object.defineProperty(value, 'length', {
+                value: Number.MAX_SAFE_INTEGER,
+            });
+            // Should serialize without hanging (treated as a plain object)
+            var result = serialize(value);
+            strictEqual(typeof result, 'string');
+        });
+
+        it('should not hang on Array subclass with overridden filter', function () {
+            var arr = new (class extends Array {
+                filter() {
+                    while (true) {}
+                }
+            })();
+            var result = serialize(arr);
+            strictEqual(typeof result, 'string');
+        });
+    });
+
     describe('sparse arrays', function () {
         it('should serialize sparse arrays', function () {
             var a = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
