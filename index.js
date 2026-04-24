@@ -287,7 +287,11 @@ module.exports = function serialize(obj, options) {
         }
 
         if (type === 'L') {
-            return "new URL(" + serialize(urls[valueIndex].toString(), options) + ")";
+            var urlStr = urls[valueIndex].toString();
+            if (typeof urlStr !== 'string') {
+                throw new TypeError('URL.toString() must return a string');
+            }
+            return "new URL(" + serialize(urlStr, options) + ")";
         }
 
         var fn = functions[valueIndex];
