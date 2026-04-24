@@ -535,6 +535,18 @@ describe('serialize( obj )', function () {
             strictEqual(d instanceof URL, true);
             strictEqual(d.toString(), 'https://x.com/');
         });
+
+        it('should throw when serializing a spoofed URL with non-string toString()', function () {
+            var fakeUrl = Object.create(URL.prototype);
+            fakeUrl.toString = function () {
+                return {
+                    toString: function () {
+                        return 'https://example.com/';
+                    }
+                };
+            };
+            throws(function () { serialize({ url: fakeUrl }); }, TypeError);
+        });
     });
 
     describe('XSS', function () {
