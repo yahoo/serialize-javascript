@@ -619,6 +619,34 @@ describe('serialize( obj )', function () {
             strictEqual(typeof deserialized, 'function');
             strictEqual(deserialized(), '</script\t>');
         });
+
+        it('should encode script close variants in function bodies', function () {
+            var payloads = [
+                '</script>',
+                '</SCRIPT>',
+                '</Script>',
+                '</script >',
+                '</script\\t>',
+                '</script\\n>',
+                '</script\\r>',
+                '</script\\f>',
+                '</script/x>',
+                '</script x>'
+            ];
+
+            payloads.forEach(function (payload) {
+                var fn = new Function('return ' + JSON.stringify(payload));
+                var serialized = serialize(fn);
+
+                strictEqual(serialized.includes('</script'), false);
+                strictEqual(serialized.includes('</SCRIPT'), false);
+                strictEqual(serialized.includes('</Script'), false);
+
+                var deserialized;
+                eval('deserialized = ' + serialized);
+                strictEqual(deserialized(), payload);
+            });
+        });
     });
 
     describe('options', function () {
