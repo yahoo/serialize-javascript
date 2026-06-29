@@ -332,6 +332,25 @@ describe('serialize( obj )', function () {
             strictEqual(global.__RE_SOURCE_EXECUTED__, undefined);
         });
 
+        it('should throw when serializing a spoofed RegExp with non-string source via getter', function () {
+            var fakeRegex = Object.create(RegExp.prototype);
+            Object.defineProperty(fakeRegex, 'source', {
+                get: function () {
+                    return {
+                        toString: function () {
+                            global.__REGEXP_SOURCE_GETTER_EXECUTED__ = 'pwned';
+                            return 'x';
+                        }
+                    };
+                }
+            });
+            Object.defineProperty(fakeRegex, 'flags', {
+                get: function () { return 'g'; }
+            });
+            throws(function () { serialize({ re: fakeRegex }); }, TypeError);
+            strictEqual(global.__REGEXP_SOURCE_GETTER_EXECUTED__, undefined);
+        });
+
         it('should sanitize RegExp.flags to prevent code injection', function () {
             // Object that passes instanceof RegExp with attacker-controlled .flags
             var fakeRegex = Object.create(RegExp.prototype);
