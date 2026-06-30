@@ -316,6 +316,41 @@ describe('serialize( obj )', function () {
             strictEqual(serialize(re), 'new RegExp("[\\u003C\\\\\\u002Fscript\\u003E\\u003Cscript\\u003Ealert(\'xss\')\\\\\\u002F\\\\\\u002F]", "")');
         });
 
+        it('should throw when serializing a spoofed RegExp with non-string source', function () {
+            var fakeRe = Object.create(RegExp.prototype);
+            Object.defineProperty(fakeRe, 'source', {
+                enumerable: true,
+                value: {
+                    toString: function () {
+                        global.__RE_SOURCE_EXECUTED__ = 'pwned-regexp';
+                        return 'abc';
+                    }
+                }
+            });
+            Object.defineProperty(fakeRe, 'flags', { enumerable: true, value: '' });
+            throws(function () { serialize({ re: fakeRe }); }, TypeError);
+            strictEqual(global.__RE_SOURCE_EXECUTED__, undefined);
+        });
+
+        it('should throw when serializing a spoofed RegExp with non-string source via getter', function () {
+            var fakeRegex = Object.create(RegExp.prototype);
+            Object.defineProperty(fakeRegex, 'source', {
+                get: function () {
+                    return {
+                        toString: function () {
+                            global.__REGEXP_SOURCE_GETTER_EXECUTED__ = 'pwned';
+                            return 'x';
+                        }
+                    };
+                }
+            });
+            Object.defineProperty(fakeRegex, 'flags', {
+                get: function () { return 'g'; }
+            });
+            throws(function () { serialize({ re: fakeRegex }); }, TypeError);
+            strictEqual(global.__REGEXP_SOURCE_GETTER_EXECUTED__, undefined);
+        });
+
         it('should sanitize RegExp.flags to prevent code injection', function () {
             // Object that passes instanceof RegExp with attacker-controlled .flags
             var fakeRegex = Object.create(RegExp.prototype);

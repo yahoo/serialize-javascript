@@ -259,7 +259,11 @@ module.exports = function serialize(obj, options) {
         if (type === 'R') {
             // Sanitize flags to prevent code injection (only allow valid RegExp flag characters)
             var flags = String(regexps[valueIndex].flags).replace(/[^gimsuydv]/g, '');
-            return "new RegExp(" + serialize(regexps[valueIndex].source) + ", \"" + flags + "\")";
+            var regexpSource = regexps[valueIndex].source;
+            if (typeof regexpSource !== 'string') {
+                throw new TypeError('RegExp.source must be a string');
+            }
+            return "new RegExp(" + serialize(regexpSource) + ", \"" + flags + "\")";
         }
 
         if (type === 'M') {
