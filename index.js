@@ -159,6 +159,9 @@ module.exports = function serialize(obj, options) {
     function serializeFunc(fn, options) {
       var serializedFn = fn.toString();
       if (IS_NATIVE_CODE_REGEXP.test(serializedFn)) {
+          if (fn.name) {
+              return fn.name;
+          }
           throw new TypeError('Serializing native function: ' + fn.name);
       }
 
