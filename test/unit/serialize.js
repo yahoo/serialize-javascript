@@ -680,6 +680,22 @@ describe('serialize( obj )', function () {
             strictEqual(typeof deserialized.a, 'function');
             strictEqual(typeof deserialized.b, 'function');
         });
+
+        it('should not corrupt `<` used as a comparison operator followed by a regex literal', function () {
+            // `</script` here is not an HTML closing tag: it's the token
+            // sequence `<` (less-than) followed by the regex literal
+            // `/script/`. Naively unicode-escaping `<` and `/` in this
+            // context produces invalid JavaScript syntax.
+            function fn(x) { return x</script/.test(x); }
+            var serialized = serialize(fn);
+
+            var deserialized;
+            eval('deserialized = ' + serialized); // must not throw a SyntaxError
+            strictEqual(typeof deserialized, 'function');
+            // Behavior must be identical to the original function.
+            strictEqual(deserialized('script'), fn('script'));
+            strictEqual(deserialized('other'), fn('other'));
+        });
     });
 
     describe('options', function () {
