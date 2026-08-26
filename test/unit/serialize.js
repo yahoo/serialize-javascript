@@ -666,6 +666,20 @@ describe('serialize( obj )', function () {
             strictEqual(typeof deserialized, 'function');
             strictEqual(deserialized(), '</script\t>');
         });
+
+        it('should encode split script-closing payload across function bodies', function () {
+            var serialized = serialize({
+                a: function () { /* </script */ },
+                b: function () { /* > <img src=x onerror=alert(1)> */ }
+            });
+
+            strictEqual(serialized.includes('</script'), false);
+            strictEqual(serialized.includes('\\u003C\\u002Fscript'), true);
+
+            var deserialized; eval('deserialized = ' + serialized);
+            strictEqual(typeof deserialized.a, 'function');
+            strictEqual(typeof deserialized.b, 'function');
+        });
     });
 
     describe('options', function () {

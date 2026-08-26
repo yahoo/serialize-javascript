@@ -15,9 +15,23 @@ var IS_NATIVE_CODE_REGEXP = /\{\s*\[native code\]\s*\}/g;
 var IS_PURE_FUNCTION = /function.*?\(/;
 var IS_ARROW_FUNCTION = /.*?=>.*?/;
 var UNSAFE_CHARS_REGEXP   = /[<>\/\u2028\u2029]/g;
-// Regex to match </script> and variations (case-insensitive) for XSS protection
-// Matches </script followed by optional whitespace/attributes and >
+// Regexes to match script end tags (case-insensitive) for XSS protection.
+// The first matches a complete `</script...>` tag within a single value.
+// The second matches a bare `</script` prefix followed by one of the
+// characters (TAB, LF, FF, CR, SPACE, `/`, `>`) that the WHATWG HTML
+// tokenizer's "script data end tag name state" treats as ending the tag
+// name and starting tag recognition (see
+// https://html.spec.whatwg.org/multipage/parsing.html#script-data-end-tag-name-state).
+// Because that state only needs to see `</script` plus one such character to
+// commit to end-tag parsing, the matching closing `>` can be supplied by a
+// *different* serialized value later in the output; escaping the prefix on
+// its own closes that gap. A trailing backslash is also treated as a
+// boundary so that a literal `\t`/`\n`/etc. escape sequence emitted by
+// `Function.prototype.toString()` (backslash followed by a letter, not an
+// actual control character) is escaped too, even though a lone backslash is
+// not itself a WHATWG delimiter.
 var SCRIPT_CLOSE_REGEXP = /<\/script[^>]*>/gi;
+var SCRIPT_CLOSE_PREFIX_REGEXP = /<\/script(?=[\t\n\f\r \/>\\])/gi;
 
 var RESERVED_SYMBOLS = ['*', 'async'];
 
@@ -35,16 +49,16 @@ function escapeUnsafeChars(unsafeChar) {
     return ESCAPED_CHARS[unsafeChar];
 }
 
-// Escape function body for XSS protection while preserving arrow function syntax
+// Escape function body for XSS protection while preserving arrow function
+// syntax (=>) and comparison operators: only script end tags and line
+// terminators are escaped.
 function escapeFunctionBody(str) {
-    // Escape </script> sequences and variations (case-insensitive) - the main XSS risk
-    // Matches </script followed by optional whitespace/attributes and >
-    // This must be done first before other replacements
     str = str.replace(SCRIPT_CLOSE_REGEXP, function(match) {
-        // Escape all <, /, and > characters in the closing script tag
         return match.replace(/</g, '\\u003C').replace(/\//g, '\\u002F').replace(/>/g, '\\u003E');
     });
-    // Escape line terminators (these are always unsafe)
+    str = str.replace(SCRIPT_CLOSE_PREFIX_REGEXP, function(match) {
+        return match.replace(/</g, '\\u003C').replace(/\//g, '\\u002F');
+    });
     str = str.replace(/\u2028/g, '\\u2028');
     str = str.replace(/\u2029/g, '\\u2029');
     return str;
@@ -163,7 +177,6 @@ module.exports = function serialize(obj, options) {
       }
 
       // Escape unsafe HTML characters in function body for XSS protection
-      // This must preserve arrow function syntax (=>) while escaping </script>
       if (options && options.unsafe !== true) {
           serializedFn = escapeFunctionBody(serializedFn);
       }
