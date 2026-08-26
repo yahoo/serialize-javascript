@@ -25,13 +25,13 @@ var UNSAFE_CHARS_REGEXP   = /[<>\/\u2028\u2029]/g;
 // Because that state only needs to see `</script` plus one such character to
 // commit to end-tag parsing, the matching closing `>` can be supplied by a
 // *different* serialized value later in the output; escaping the prefix on
-// its own closes that gap. A trailing backslash is also treated as a
-// boundary so that a literal `\t`/`\n`/etc. escape sequence emitted by
-// `Function.prototype.toString()` (backslash followed by a letter, not an
-// actual control character) is escaped too, even though a lone backslash is
-// not itself a WHATWG delimiter.
+// its own closes that gap. A trailing backslash is intentionally NOT
+// included: HTML tokenization happens before any JavaScript escape-sequence
+// processing, so a literal backslash character is not itself a delimiter
+// recognized by the tokenizer, and treating it as one would incorrectly
+// alter the raw text of tagged template literals (e.g. `String.raw`).
 var SCRIPT_CLOSE_REGEXP = /<\/script[^>]*>/gi;
-var SCRIPT_CLOSE_PREFIX_REGEXP = /<\/script(?=[\t\n\f\r \/>\\])/gi;
+var SCRIPT_CLOSE_PREFIX_REGEXP = /<\/script(?=[\t\n\f\r \/>])/gi;
 
 var RESERVED_SYMBOLS = ['*', 'async'];
 
