@@ -15,27 +15,15 @@ var IS_NATIVE_CODE_REGEXP = /\{\s*\[native code\]\s*\}/g;
 var IS_PURE_FUNCTION = /function.*?\(/;
 var IS_ARROW_FUNCTION = /.*?=>.*?/;
 var UNSAFE_CHARS_REGEXP   = /[<>\/\u2028\u2029]/g;
-// Matches a script end tag (case-insensitive) for XSS protection, in either
-// of two forms:
-//   1. `<\/script[^>]*>` - a complete `</script...>` tag within a single
-//      value, escaped in full (including the closing `>`).
-//   2. `<\/script(?=[\t\n\f\r \/>])` - a bare `</script` prefix followed by
-//      one of the characters (TAB, LF, FF, CR, SPACE, `/`, `>`) that the
-//      WHATWG HTML tokenizer's "script data end tag name state" treats as
-//      ending the tag name and starting end-tag recognition (see
-//      https://html.spec.whatwg.org/multipage/parsing.html#script-data-end-tag-name-state).
-//      Because that state only needs to see `</script` plus one such
-//      character to commit to end-tag parsing, the matching closing `>` can
-//      be supplied by a *different* serialized value later in the output, so
-//      the closing tag itself doesn't need to be present in the same match;
-//      escaping the prefix on its own closes that gap. A trailing backslash
-//      is intentionally NOT included: HTML tokenization happens before any
-//      JavaScript escape-sequence processing, so a literal backslash
-//      character is not itself a delimiter recognized by the tokenizer, and
-//      treating it as one would incorrectly alter the raw text of tagged
-//      template literals (e.g. `String.raw`).
-// The first alternative is tried first so a fully-formed tag (the common
-// case) is escaped as one unit, including its closing `>`.
+// Matches a script end tag (case-insensitive) for XSS protection: either a
+// full `</script...>` tag, or a bare `</script` followed by one of the
+// characters (TAB, LF, FF, CR, SPACE, `/`, `>`) that the HTML tokenizer
+// treats as ending the tag name (see the WHATWG "script data end tag name
+// state"). The bare-prefix form matters because the matching `>` could be
+// supplied by a different serialized value later in the output, so escaping
+// stops there without waiting for a closing `>`. A trailing backslash is not
+// a delimiter here (that's a JS-level concern, not an HTML one), so this
+// doesn't affect tagged template literals like `String.raw`.
 var SCRIPT_CLOSE_REGEXP = /<\/script[^>]*>|<\/script(?=[\t\n\f\r \/>])/gi;
 
 var RESERVED_SYMBOLS = ['*', 'async'];
@@ -54,39 +42,28 @@ function escapeUnsafeChars(unsafeChar) {
     return ESCAPED_CHARS[unsafeChar];
 }
 
-// Matches string literals, template literals, regex literals, and comments
-// so that `escapeFunctionBody` can tell them apart from plain code (see
-// below). This is a lightweight heuristic, not a full parser:
-// - A whole template literal (backtick to backtick) is treated as one
-//   opaque span, including any `${...}` substitutions inside it. Known
-//   limitation: if a `</script` sequence appears *inside* such a
-//   substitution (which is actual code, e.g. `` `${ x</script/.test(x) }` ``),
-//   it will be misidentified as string/template content and
-//   unicode-escaped, which can still produce a SyntaxError. This is
-//   considered an acceptable trade-off for keeping this scan simple; none
-//   of our tests hit this narrower case.
-// - The regex-literal alternative can't reliably distinguish a real regex
-//   literal from a division expression (e.g. `a / b / c`), since that
-//   requires knowing the preceding token. It's included primarily so a
-//   quote character inside a genuine regex literal (e.g. `/'/`) isn't
-//   mistaken for the start of a string, which would misalign every
-//   subsequent string match; a division expression that happens to match
-//   this pattern is merely treated as opaque, which only risks an
-//   unnecessary (but still valid) unicode-escape rather than a
-//   miscalculated string boundary. Bracket character classes (`[...]`) are
-//   matched as a unit so that an unescaped `/` inside one (valid and
-//   unremarkable in a regex literal, e.g. `/[/']/`) isn't mistaken for the
-//   literal's closing delimiter, which would otherwise end the match early
-//   and misalign whatever string/regex follows.
+// Roughly matches string literals, template literals, regex literals, and
+// comments, so `escapeFunctionBody` can treat their contents differently
+// from plain code. This is a heuristic, not a full parser, with two known
+// limitations:
+// - A template literal is treated as one opaque span, including any
+//   `${...}` inside it. A `</script`-like sequence inside such a
+//   substitution (real code) can be misclassified as string content.
+// - The regex-literal alternative can't tell a regex from division (e.g.
+//   `a / b / c`); a division expression that matches it is simply treated
+//   as opaque, which only risks an unnecessary (but valid) unicode-escape.
+//   It exists mainly so quotes and slashes inside a real regex (including
+//   inside a `[...]` character class) aren't mistaken for string/regex
+//   delimiters, which would misalign whatever follows.
 var STRING_OR_COMMENT_REGEXP = /\/\*[\s\S]*?\*\/|\/\/[^\n]*|'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|`(?:\\.|[^`\\])*`|\/(?:\\.|\[(?:\\.|[^\]\\\n])*\]|[^\/\\\n])+\//g;
 
 // Escape function body for XSS protection while preserving arrow function
 // syntax (=>), comparison operators, and regex literals: only script end
 // tags and line terminators are escaped.
 function escapeFunctionBody(str) {
-    // Record the [start, end) span of every string literal, template
-    // literal, regex literal, and comment so matches inside them can be
-    // treated differently from matches in plain code (see below).
+    // Record the [start, end) span of every string/template/regex literal
+    // and comment, so a script-close match inside one can be escaped
+    // differently from a match in plain code (see below).
     var stringAndCommentSpans = [];
     var match;
     STRING_OR_COMMENT_REGEXP.lastIndex = 0;
@@ -94,10 +71,9 @@ function escapeFunctionBody(str) {
         stringAndCommentSpans.push([match.index, match.index + match[0].length]);
     }
 
-    // Both the script-close matches (found below, in source order via
-    // `replace`) and `stringAndCommentSpans` are ordered by offset, so a
-    // single forward-moving cursor is enough to classify every match in
-    // O(n) total instead of re-scanning every span for every match.
+    // Matches and spans are both in increasing offset order, so a single
+    // forward-moving cursor classifies every match in O(n) total instead of
+    // rescanning all spans for each match.
     var spanCursor = 0;
 
     str = str.replace(SCRIPT_CLOSE_REGEXP, function(scriptCloseMatch, offset) {
@@ -107,19 +83,14 @@ function escapeFunctionBody(str) {
         var span = stringAndCommentSpans[spanCursor];
         var inStringOrComment = !!span && offset >= span[0] && offset < span[1];
         if (!inStringOrComment) {
-            // Outside of strings/templates/comments, `<` and `/` are real
-            // JavaScript tokens (a comparison operator, a regex literal
-            // delimiter, division, etc.) and can't be rewritten as unicode
-            // escapes without producing invalid syntax. Inserting
-            // whitespace between them is a no-op for JavaScript semantics
-            // (tokens are whitespace-insensitive here) while still breaking
-            // up the literal `</script` sequence the HTML tokenizer looks
-            // for.
+            // In plain code, `<` and `/` may be real tokens (comparison,
+            // regex delimiter, division, ...), so they can't be rewritten
+            // as unicode escapes without breaking syntax. A space is a
+            // no-op here but still breaks up the `</script` sequence.
             return '< ' + scriptCloseMatch.slice(1);
         }
-        // Inside a string, template literal, or comment the exact
-        // characters matter (or, for comments, don't matter but must stay
-        // valid), so use character-preserving unicode escapes instead.
+        // Inside a string/template/regex/comment, characters must be
+        // preserved exactly, so unicode-escape instead.
         return scriptCloseMatch.replace(/</g, '\\u003C').replace(/\//g, '\\u002F').replace(/>/g, '\\u003E');
     });
     str = str.replace(/\u2028/g, '\\u2028');
