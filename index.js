@@ -54,25 +54,35 @@ function escapeUnsafeChars(unsafeChar) {
     return ESCAPED_CHARS[unsafeChar];
 }
 
-// Matches string literals, template literals, and comments so that
-// `escapeFunctionBody` can tell them apart from plain code (see below).
-// This is a lightweight heuristic, not a full parser: a whole template
-// literal (backtick to backtick) is treated as one opaque span, including
-// any `${...}` substitutions inside it. Known limitation: if a `</script`
-// sequence appears *inside* such a substitution (which is actual code, e.g.
-// `` `${ x</script/.test(x) }` ``), it will be misidentified as
-// string/template content and unicode-escaped, which can still produce a
-// SyntaxError. This is considered an acceptable trade-off for keeping this
-// scan simple; none of our tests hit this narrower case.
-var STRING_OR_COMMENT_REGEXP = /\/\*[\s\S]*?\*\/|\/\/[^\n]*|'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|`(?:\\.|[^`\\])*`/g;
+// Matches string literals, template literals, regex literals, and comments
+// so that `escapeFunctionBody` can tell them apart from plain code (see
+// below). This is a lightweight heuristic, not a full parser:
+// - A whole template literal (backtick to backtick) is treated as one
+//   opaque span, including any `${...}` substitutions inside it. Known
+//   limitation: if a `</script` sequence appears *inside* such a
+//   substitution (which is actual code, e.g. `` `${ x</script/.test(x) }` ``),
+//   it will be misidentified as string/template content and
+//   unicode-escaped, which can still produce a SyntaxError. This is
+//   considered an acceptable trade-off for keeping this scan simple; none
+//   of our tests hit this narrower case.
+// - The regex-literal alternative can't reliably distinguish a real regex
+//   literal from a division expression (e.g. `a / b / c`), since that
+//   requires knowing the preceding token. It's included primarily so a
+//   quote character inside a genuine regex literal (e.g. `/'/`) isn't
+//   mistaken for the start of a string, which would misalign every
+//   subsequent string match; a division expression that happens to match
+//   this pattern is merely treated as opaque, which only risks an
+//   unnecessary (but still valid) unicode-escape rather than a
+//   miscalculated string boundary.
+var STRING_OR_COMMENT_REGEXP = /\/\*[\s\S]*?\*\/|\/\/[^\n]*|'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|`(?:\\.|[^`\\])*`|\/(?:\\.|[^\/\\\n])+\//g;
 
 // Escape function body for XSS protection while preserving arrow function
 // syntax (=>), comparison operators, and regex literals: only script end
 // tags and line terminators are escaped.
 function escapeFunctionBody(str) {
     // Record the [start, end) span of every string literal, template
-    // literal, and comment so matches inside them can be treated
-    // differently from matches in plain code (see below).
+    // literal, regex literal, and comment so matches inside them can be
+    // treated differently from matches in plain code (see below).
     var stringAndCommentSpans = [];
     var match;
     STRING_OR_COMMENT_REGEXP.lastIndex = 0;
@@ -80,10 +90,18 @@ function escapeFunctionBody(str) {
         stringAndCommentSpans.push([match.index, match.index + match[0].length]);
     }
 
+    // Both the script-close matches (found below, in source order via
+    // `replace`) and `stringAndCommentSpans` are ordered by offset, so a
+    // single forward-moving cursor is enough to classify every match in
+    // O(n) total instead of re-scanning every span for every match.
+    var spanCursor = 0;
+
     str = str.replace(SCRIPT_CLOSE_REGEXP, function(scriptCloseMatch, offset) {
-        var inStringOrComment = stringAndCommentSpans.some(function(span) {
-            return offset >= span[0] && offset < span[1];
-        });
+        while (spanCursor < stringAndCommentSpans.length && stringAndCommentSpans[spanCursor][1] <= offset) {
+            spanCursor++;
+        }
+        var span = stringAndCommentSpans[spanCursor];
+        var inStringOrComment = !!span && offset >= span[0] && offset < span[1];
         if (!inStringOrComment) {
             // Outside of strings/templates/comments, `<` and `/` are real
             // JavaScript tokens (a comparison operator, a regex literal

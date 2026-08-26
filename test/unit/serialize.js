@@ -696,6 +696,20 @@ describe('serialize( obj )', function () {
             strictEqual(deserialized('script'), fn('script'));
             strictEqual(deserialized('other'), fn('other'));
         });
+
+        it('should not let a quote inside a regex literal misalign a later string literal', function () {
+            // The quote in `/'/` must not be mistaken for the start of a
+            // string; otherwise the real string below is misidentified and
+            // its `</script ` payload is left unescaped as plain code.
+            function fn(x) { return /'/.test(x) ? '</script ' : 'ok'; }
+            var serialized = serialize(fn);
+
+            strictEqual(/<\/script[\t\n\f\r \/>]/i.test(serialized), false);
+
+            var deserialized; eval('deserialized = ' + serialized);
+            strictEqual(deserialized("'"), fn("'"));
+            strictEqual(deserialized('x'), fn('x'));
+        });
     });
 
     describe('options', function () {
