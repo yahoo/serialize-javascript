@@ -710,6 +710,22 @@ describe('serialize( obj )', function () {
             strictEqual(deserialized("'"), fn("'"));
             strictEqual(deserialized('x'), fn('x'));
         });
+
+        it('should not let a `/` inside a regex character class end the regex literal early', function () {
+            // `/` inside `[...]` doesn't need to be escaped and doesn't
+            // terminate the regex literal. If it were mistaken for the
+            // closing delimiter, the real string literal that follows would
+            // be misidentified and its `</script ` payload left unescaped.
+            function fn(x) { return /[/']/.test(x) ? '</script ' : 'ok'; }
+            var serialized = serialize(fn);
+
+            strictEqual(/<\/script[\t\n\f\r \/>]/i.test(serialized), false);
+
+            var deserialized; eval('deserialized = ' + serialized);
+            strictEqual(deserialized("'"), fn("'"));
+            strictEqual(deserialized('/'), fn('/'));
+            strictEqual(deserialized('x'), fn('x'));
+        });
     });
 
     describe('options', function () {

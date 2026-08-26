@@ -73,8 +73,12 @@ function escapeUnsafeChars(unsafeChar) {
 //   subsequent string match; a division expression that happens to match
 //   this pattern is merely treated as opaque, which only risks an
 //   unnecessary (but still valid) unicode-escape rather than a
-//   miscalculated string boundary.
-var STRING_OR_COMMENT_REGEXP = /\/\*[\s\S]*?\*\/|\/\/[^\n]*|'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|`(?:\\.|[^`\\])*`|\/(?:\\.|[^\/\\\n])+\//g;
+//   miscalculated string boundary. Bracket character classes (`[...]`) are
+//   matched as a unit so that an unescaped `/` inside one (valid and
+//   unremarkable in a regex literal, e.g. `/[/']/`) isn't mistaken for the
+//   literal's closing delimiter, which would otherwise end the match early
+//   and misalign whatever string/regex follows.
+var STRING_OR_COMMENT_REGEXP = /\/\*[\s\S]*?\*\/|\/\/[^\n]*|'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|`(?:\\.|[^`\\])*`|\/(?:\\.|\[(?:\\.|[^\]\\\n])*\]|[^\/\\\n])+\//g;
 
 // Escape function body for XSS protection while preserving arrow function
 // syntax (=>), comparison operators, and regex literals: only script end
