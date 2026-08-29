@@ -666,6 +666,66 @@ describe('serialize( obj )', function () {
             strictEqual(typeof deserialized, 'function');
             strictEqual(deserialized(), '</script\t>');
         });
+
+        it('should encode split script-closing payload across function bodies', function () {
+            var serialized = serialize({
+                a: function () { /* </script */ },
+                b: function () { /* > <img src=x onerror=alert(1)> */ }
+            });
+
+            strictEqual(serialized.includes('</script'), false);
+            strictEqual(serialized.includes('\\u003C\\u002Fscript'), true);
+
+            var deserialized; eval('deserialized = ' + serialized);
+            strictEqual(typeof deserialized.a, 'function');
+            strictEqual(typeof deserialized.b, 'function');
+        });
+
+        it('should not corrupt `<` used as a comparison operator followed by a regex literal', function () {
+            // `</script` here is not an HTML closing tag: it's the token
+            // sequence `<` (less-than) followed by the regex literal
+            // `/script/`. Naively unicode-escaping `<` and `/` in this
+            // context produces invalid JavaScript syntax.
+            function fn(x) { return x</script/.test(x); }
+            var serialized = serialize(fn);
+
+            var deserialized;
+            eval('deserialized = ' + serialized); // must not throw a SyntaxError
+            strictEqual(typeof deserialized, 'function');
+            // Behavior must be identical to the original function.
+            strictEqual(deserialized('script'), fn('script'));
+            strictEqual(deserialized('other'), fn('other'));
+        });
+
+        it('should not let a quote inside a regex literal misalign a later string literal', function () {
+            // The quote in `/'/` must not be mistaken for the start of a
+            // string; otherwise the real string below is misidentified and
+            // its `</script ` payload is left unescaped as plain code.
+            function fn(x) { return /'/.test(x) ? '</script ' : 'ok'; }
+            var serialized = serialize(fn);
+
+            strictEqual(/<\/script[\t\n\f\r \/>]/i.test(serialized), false);
+
+            var deserialized; eval('deserialized = ' + serialized);
+            strictEqual(deserialized("'"), fn("'"));
+            strictEqual(deserialized('x'), fn('x'));
+        });
+
+        it('should not let a `/` inside a regex character class end the regex literal early', function () {
+            // `/` inside `[...]` doesn't need to be escaped and doesn't
+            // terminate the regex literal. If it were mistaken for the
+            // closing delimiter, the real string literal that follows would
+            // be misidentified and its `</script ` payload left unescaped.
+            function fn(x) { return /[/']/.test(x) ? '</script ' : 'ok'; }
+            var serialized = serialize(fn);
+
+            strictEqual(/<\/script[\t\n\f\r \/>]/i.test(serialized), false);
+
+            var deserialized; eval('deserialized = ' + serialized);
+            strictEqual(deserialized("'"), fn("'"));
+            strictEqual(deserialized('/'), fn('/'));
+            strictEqual(deserialized('x'), fn('x'));
+        });
     });
 
     describe('options', function () {
