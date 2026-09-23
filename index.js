@@ -11,20 +11,34 @@ var UID_LENGTH          = 16;
 var UID                 = generateUID();
 var PLACE_HOLDER_REGEXP = new RegExp('(\\\\)?"@__(F|R|D|M|S|A|U|I|B|L)-' + UID + '-(\\d+)__@"', 'g');
 
-var IS_NATIVE_CODE_REGEXP = /\{\s*\[native code\]\s*\}/g;
+// Not global: `.test()` on a `/g` regexp advances `lastIndex`, so a second
+// call could start past a `[native code]` match and wrongly report a native
+// function as safe to serialize.
+var IS_NATIVE_CODE_REGEXP = /\{\s*\[native code\]\s*\}/;
 var IS_PURE_FUNCTION = /function.*?\(/;
 var IS_ARROW_FUNCTION = /.*?=>.*?/;
 var UNSAFE_CHARS_REGEXP   = /[<>\/\u2028\u2029]/g;
 // Matches a script end tag (case-insensitive) for XSS protection: either a
-// full `</script...>` tag, or a bare `</script` followed by one of the
-// characters (TAB, LF, FF, CR, SPACE, `/`, `>`) that the HTML tokenizer
-// treats as ending the tag name (see the WHATWG "script data end tag name
-// state"). The bare-prefix form matters because the matching `>` could be
-// supplied by a different serialized value later in the output, so escaping
-// stops there without waiting for a closing `>`. A trailing backslash is not
-// a delimiter here (that's a JS-level concern, not an HTML one), so this
-// doesn't affect tagged template literals like `String.raw`.
-var SCRIPT_CLOSE_REGEXP = /<\/script[^>]*>|<\/script(?=[\t\n\f\r \/>])/gi;
+// literal `</script>`, or a bare `</script` followed by one of the other
+// characters (TAB, LF, FF, CR, SPACE, `/`) that the HTML tokenizer treats as
+// ending the tag name (see the WHATWG "script data end tag name state"). Any
+// other following character means the tokenizer emits `</script` as text and
+// stays in script data, so only these need neutralizing. The bare-prefix form
+// matters because the matching `>` could be supplied by a different
+// serialized value later in the output, so escaping stops there without
+// waiting for a closing `>`. A trailing backslash is not a delimiter here
+// (that's a JS-level concern, not an HTML one), so this doesn't affect tagged
+// template literals like `String.raw`.
+//
+// The `[^<>]*` in the first alternative excludes `<`, which is load-bearing:
+// it was previously `[^>]*`, letting a single match run from one `</script`
+// to the next `>` anywhere in the source and swallow a complete `</script>`
+// in between. Only one replacement is emitted per match, so the swallowed tag
+// survived verbatim in the output (PSECBUGS-117112). Because a match can no
+// longer contain a second `<`, every `</script` in the source is either the
+// start of its own match or is followed by a non-delimiter — and the latter
+// the tokenizer never treats as an end tag.
+var SCRIPT_CLOSE_REGEXP = /<\/script[^<>]*>|<\/script(?=[\t\n\f\r \/>])/gi;
 
 var RESERVED_SYMBOLS = ['*', 'async'];
 
@@ -206,6 +220,14 @@ module.exports = function serialize(obj, options) {
 
     function serializeFunc(fn, options) {
       var serializedFn = fn.toString();
+
+      // A spoofed `toString()` can return a non-string whose `replace()` is
+      // attacker-controlled, which would let it pass through
+      // `escapeFunctionBody()` unescaped and inject markup into the output.
+      if (typeof serializedFn !== 'string') {
+          throw new TypeError('Function.toString() must return a string');
+      }
+
       if (IS_NATIVE_CODE_REGEXP.test(serializedFn)) {
           throw new TypeError('Serializing native function: ' + fn.name);
       }

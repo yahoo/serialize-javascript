@@ -121,6 +121,45 @@ describe('serialize( obj )', function () {
             strictEqual(err instanceof TypeError, true);
         });
 
+        it('should keep rejecting native built-ins after an earlier rejection', function () {
+            // The native-code check must not carry `lastIndex` state between
+            // calls, or every other native function would slip through.
+            throws(function () { serialize(Math.max); }, TypeError);
+            throws(function () { serialize(Math.min); }, TypeError);
+            throws(function () { serialize(Math.max); }, TypeError);
+        });
+
+        it('should throw when serializing a function with a spoofed non-string toString()', function () {
+            var fn = function () {};
+            fn.toString = function () {
+                return {
+                    toString: function () { return 'function(){}'; }
+                };
+            };
+            throws(function () { serialize({ fn: fn }); }, TypeError);
+        });
+
+        it('should throw when a spoofed toString() returns an object with its own replace()', function () {
+            // Without a type check, `escapeFunctionBody()` would call this
+            // object's `replace()`, which returns the payload unescaped.
+            var fn = function () {};
+            fn.toString = function () {
+                return {
+                    replace: function () { return this; },
+                    toString: function () {
+                        return 'function(){}</script><img src=x onerror=alert(1)>';
+                    }
+                };
+            };
+            throws(function () { serialize({ fn: fn }); }, TypeError);
+        });
+
+        it('should escape script close tags from a spoofed string toString()', function () {
+            var fn = function () {};
+            fn.toString = function () { return 'function(){}</script>'; };
+            strictEqual(serialize({ fn: fn }).indexOf('</script>'), -1);
+        });
+
         it('should serialize enhanced literal objects', function () {
             var obj = {
                 foo() { return true; },
@@ -602,6 +641,50 @@ describe('serialize( obj )', function () {
             var deserialized; eval('deserialized = ' + serialized);
             strictEqual(typeof deserialized, 'function');
             strictEqual(deserialized(), '</script>');
+        });
+
+        // A `</script` only ends the script element when the next character
+        // is one the HTML tokenizer accepts as ending the tag name. Followed
+        // by anything else it is emitted as text, so that is what must be
+        // absent from the output -- not every literal `</script` substring.
+        var CLOSES_SCRIPT = /<\/script[\t\n\f\r \/>]/i;
+
+        it('should not leak a second script close tag swallowed by the first match (PSECBUGS-117112)', function () {
+            // `x</script=+/` parses as `x < /script=+/` (a comparison against
+            // a regex literal), so `</script` appears in plain-code position
+            // with no `>` after it until the one inside the later string. The
+            // first regex alternative used to match across that whole span in
+            // one go, emitting the inner `</script>` raw.
+            var src = "function f(x){ return x</script=+/ + '</script><img src=x onerror=alert(1)>' }";
+            var fn = new Function('return ' + src)();
+            var serialized = serialize({ h: fn });
+
+            strictEqual(CLOSES_SCRIPT.test(serialized), false);
+            // The inner tag is inside a string literal, so it unicode-escapes.
+            strictEqual(serialized.includes('\\u003C\\u002Fscript\\u003E'), true);
+        });
+
+        it('should escape every script close tag when several appear in one function', function () {
+            var src = "function f(x){ return x</script=+/ + '</script>' + '</script>' + '</script >' }";
+            var fn = new Function('return ' + src)();
+            var serialized = serialize({ h: fn });
+
+            strictEqual(CLOSES_SCRIPT.test(serialized), false);
+        });
+
+        it('should not let a script close tag straddle plain code and a string', function () {
+            // The `</script` in code position and the one in the string must
+            // be classified separately, since only the latter can safely be
+            // rewritten as unicode escapes.
+            var src = "function f(x){ return x</script/ + '</script>' }";
+            var fn = new Function('return ' + src)();
+            var serialized = serialize({ h: fn });
+
+            strictEqual(CLOSES_SCRIPT.test(serialized), false);
+            // Code position: neutralized with a space, which parses the same.
+            strictEqual(serialized.includes('< /script/'), true);
+            // String position: unicode-escaped, preserving the runtime value.
+            strictEqual(serialized.includes('\\u003C\\u002Fscript\\u003E'), true);
         });
 
         it('should encode unsafe HTML chars in arrow function bodies', function () {
