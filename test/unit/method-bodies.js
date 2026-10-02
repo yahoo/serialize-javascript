@@ -47,3 +47,20 @@ describe('method bodies containing other functions', function () {
         strictEqual(output.method().next().value, 42);
     });
 });
+
+
+describe('outer function signatures', function () {
+    it('preserves async signatures with comments instead of spaces', async function () {
+        for (const fn of [async/**/function () { return 42; }, async/**/() => 42]) {
+            const output = eval('(' + serialize(fn) + ')');
+            strictEqual(await output(), 42);
+            strictEqual(output.constructor.name, 'AsyncFunction');
+        }
+    });
+
+    it('preserves arrows whose default arguments contain functions', function () {
+        const fn = (callback = function () { return 42; }) => callback();
+        const output = eval('(' + serialize(fn) + ')');
+        strictEqual(output(), 42);
+    });
+});
