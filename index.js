@@ -15,8 +15,9 @@ var PLACE_HOLDER_REGEXP = new RegExp('(\\\\)?"@__(F|R|D|M|S|A|U|I|B|L)-' + UID +
 // call could start past a `[native code]` match and wrongly report a native
 // function as safe to serialize.
 var IS_NATIVE_CODE_REGEXP = /\{\s*\[native code\]\s*\}/;
-var IS_PURE_FUNCTION = /function.*?\(/;
-var IS_ARROW_FUNCTION = /.*?=>.*?/;
+// Classify the outer function, not a declaration or arrow inside its body.
+var IS_PURE_FUNCTION = /^(?:async\s+)?function\b/;
+var IS_ARROW_FUNCTION = /^(?:async\s+)?(?:\([\s\S]*?\)|[^\s()]+)\s*=>/;
 var UNSAFE_CHARS_REGEXP   = /[<>\/\u2028\u2029]/g;
 // Matches a script end tag (case-insensitive) for XSS protection: either a
 // literal `</script>`, or a bare `</script` followed by one of the other
