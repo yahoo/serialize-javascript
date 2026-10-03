@@ -121,18 +121,6 @@ function generateUID() {
     return result;
 }
 
-function deleteFunctions(obj){
-    var functionKeys = [];
-    for (var key in obj) {
-        if (typeof obj[key] === "function") {
-            functionKeys.push(key);
-        }
-    }
-    for (var i = 0; i < functionKeys.length; i++) {
-        delete obj[functionKeys[i]];
-    }
-}
-
 module.exports = function serialize(obj, options) {
     options || (options = {});
 
@@ -155,11 +143,6 @@ module.exports = function serialize(obj, options) {
     // Returns placeholders for functions and regexps (identified by index)
     // which are later replaced by their string representation.
     function replacer(key, value) {
-
-        // For nested function
-        if(options.ignoreFunction){
-            deleteFunctions(value);
-        }
 
         if (!value && value !== undefined && value !== BigInt(0)) {
             return value;
@@ -200,6 +183,10 @@ module.exports = function serialize(obj, options) {
         }
 
         if (type === 'function') {
+            if (options.ignoreFunction) {
+                // Let JSON.stringify omit functions without mutating the input.
+                return value;
+            }
             return '@__F-' + UID + '-' + (functions.push(origValue) - 1) + '__@';
         }
 
