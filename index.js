@@ -323,7 +323,7 @@ module.exports = function serialize(obj, options) {
         if (type === 'D') {
             // Validate ISO string format to prevent code injection via spoofed toISOString()
             var isoStr = String(dates[valueIndex].toISOString());
-            if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/.test(isoStr)) {
+            if (!/^(?:\d{4}|[+-]\d{6})-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/.test(isoStr)) {
                 throw new TypeError('Invalid Date ISO string');
             }
             return "new Date(\"" + isoStr + "\")";
