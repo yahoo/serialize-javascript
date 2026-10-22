@@ -907,6 +907,27 @@ describe('serialize( obj )', function () {
         });
     });
 
+    describe('ignoring functions without changing the input', function () {
+        it('should preserve function properties in nested input objects', function () {
+            var fn = function () {};
+            var obj = {nested: {fn: fn, value: 1}};
+            strictEqual(serialize(obj, {ignoreFunction: true}), '{"nested":{"value":1}}');
+            strictEqual(obj.nested.fn, fn);
+        });
+
+        it('should accept frozen objects containing functions', function () {
+            var obj = Object.freeze({fn: function () {}, value: 1});
+            strictEqual(serialize(obj, {ignoreFunction: true}), '{"value":1}');
+        });
+
+        it('should replace array functions with null without deleting elements', function () {
+            var fn = function () {};
+            var values = [fn, 1];
+            strictEqual(serialize(values, {ignoreFunction: true}), '[null,1]');
+            strictEqual(values[0], fn);
+        });
+    });
+
     describe('backwards-compatability', function () {
         it('should accept `space` as the second argument', function () {
             strictEqual(serialize([1], 0), '[1]');
