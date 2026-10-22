@@ -664,6 +664,30 @@ describe('serialize( obj )', function () {
             strictEqual(serialized.includes('\\u003C\\u002Fscript\\u003E'), true);
         });
 
+        it('should escape a script close tag at the very end of a function body (PSECBUGS-118415)', function () {
+            // Each body is escaped on its own, so one ending in a bare
+            // `</script` can't see the newline the `space` option emits right
+            // after it, and a later value can then supply the closing `>`.
+            var f = function () {};
+            f.toString = function () { return 'function f(){ return 1 }//</script'; };
+            var g = function () {};
+            g.toString = function () { return 'function g(x){ return x } > <img src=x onerror=alert(1)>'; };
+            var serialized = serialize({ a: { f: f }, g: g }, { space: 2 });
+
+            strictEqual(CLOSES_SCRIPT.test(serialized), false);
+            // Inside the line comment, so it unicode-escapes.
+            strictEqual(serialized.includes('//\\u003C\\u002Fscript\n'), true);
+        });
+
+        it('should neutralize a script close tag ending a function body in code position', function () {
+            var fn = function () {};
+            fn.toString = function () { return 'function f(x){ return x }</script'; };
+            var serialized = serialize([fn], { space: 2 });
+
+            strictEqual(CLOSES_SCRIPT.test(serialized), false);
+            strictEqual(serialized.includes('}< /script\n'), true);
+        });
+
         it('should escape every script close tag when several appear in one function', function () {
             var src = "function f(x){ return x</script=+/ + '</script>' + '</script>' + '</script >' }";
             var fn = new Function('return ' + src)();

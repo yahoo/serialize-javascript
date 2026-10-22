@@ -26,7 +26,11 @@ var UNSAFE_CHARS_REGEXP   = /[<>\/\u2028\u2029]/g;
 // stays in script data, so only these need neutralizing. The bare-prefix form
 // matters because the matching `>` could be supplied by a different
 // serialized value later in the output, so escaping stops there without
-// waiting for a closing `>`. A trailing backslash is not a delimiter here
+// waiting for a closing `>`. For the same reason the bare form also matches
+// at the very end of the string: each function body is escaped on its own, so
+// a body ending in `</script` can't see the delimiter (e.g. the newline added
+// by the `space` option) that the surrounding output supplies next
+// (PSECBUGS-118415). A trailing backslash is not a delimiter here
 // (that's a JS-level concern, not an HTML one), so this doesn't affect tagged
 // template literals like `String.raw`.
 //
@@ -38,7 +42,7 @@ var UNSAFE_CHARS_REGEXP   = /[<>\/\u2028\u2029]/g;
 // longer contain a second `<`, every `</script` in the source is either the
 // start of its own match or is followed by a non-delimiter — and the latter
 // the tokenizer never treats as an end tag.
-var SCRIPT_CLOSE_REGEXP = /<\/script[^<>]*>|<\/script(?=[\t\n\f\r \/>])/gi;
+var SCRIPT_CLOSE_REGEXP = /<\/script[^<>]*>|<\/script(?=$|[\t\n\f\r \/>])/gi;
 
 var RESERVED_SYMBOLS = ['*', 'async'];
 
