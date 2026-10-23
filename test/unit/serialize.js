@@ -643,14 +643,27 @@ describe('serialize( obj )', function () {
             strictEqual(deserialized(), '</script>');
         });
 
-        it('should encode case-insensitive script close tags in function bodies', function () {
-            function fn() { return '</SCRIPT>'; }
-            var serialized = serialize(fn);
+        it('should encode mixed-case and delimiter variants in function bodies', function () {
+            // These escapes create actual LF, CR, and FF characters in each
+            // returned value. Serialization must keep the source safe and
+            // preserve those values after deserialization.
+            var payloads = [
+                '</sCrIpT>',
+                '</script/x>',
+                '</script\n>',
+                '</script\r>',
+                '</script\f>'
+            ];
 
-            strictEqual(CLOSES_SCRIPT.test(serialized), false);
+            payloads.forEach(function (payload) {
+                var fn = new Function('return ' + JSON.stringify(payload));
+                var serialized = serialize(fn);
 
-            var deserialized; eval('deserialized = ' + serialized);
-            strictEqual(deserialized(), '</SCRIPT>');
+                strictEqual(CLOSES_SCRIPT.test(serialized), false);
+
+                var deserialized; eval('deserialized = ' + serialized);
+                strictEqual(deserialized(), payload);
+            });
         });
 
         // A `</script` only ends the script element when the next character
