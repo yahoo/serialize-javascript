@@ -50,6 +50,26 @@ describe('method bodies containing other functions', function () {
 
 
 describe('outer function signatures', function () {
+    it('round trips a class with a nested arrow', function () {
+        class A { method() { return value => value; } }
+        const output = eval('(' + serialize({ A }) + ')');
+        strictEqual(new output.A().method()(42), 42);
+        strictEqual(output.A.toString(), A.toString());
+    });
+
+    it('round trips a class without nested functions', function () {
+        class A { method() { return 42; } }
+        const output = eval('(' + serialize({ A }) + ')');
+        strictEqual(new output.A().method(), 42);
+        strictEqual(output.A.toString(), A.toString());
+    });
+
+    it('still converts concise methods named class', function () {
+        const input = { class () { return 42; } };
+        const output = eval('(' + serialize(input) + ')');
+        strictEqual(output.class(), 42);
+    });
+
     it('preserves async signatures with comments instead of spaces', async function () {
         for (const fn of [async/**/function () { return 42; }, async/**/() => 42]) {
             const output = eval('(' + serialize(fn) + ')');

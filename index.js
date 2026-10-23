@@ -17,6 +17,8 @@ var PLACE_HOLDER_REGEXP = new RegExp('(\\\\)?"@__(F|R|D|M|S|A|U|I|B|L)-' + UID +
 var IS_NATIVE_CODE_REGEXP = /\{\s*\[native code\]\s*\}/;
 // Classify the outer function, not a declaration or arrow inside its body.
 var IS_PURE_FUNCTION = /^(?:async(?:\s|\/\*[\s\S]*?\*\/|\/\/[^\n]*\n)+)?function\b/;
+// A concise method named `class` is followed by `(`, unlike a class expression.
+var IS_CLASS = /^class\b(?:\s|\/\*[\s\S]*?\*\/|\/\/[^\n]*\n)*(?:\{|[^\s(/])/;
 var IS_ARROW_FUNCTION = /^(?:async(?:\s|\/\*[\s\S]*?\*\/|\/\/[^\n]*\n)+)?(?:\([\s\S]*?\)|[^\s()]+)\s*=>/;
 var UNSAFE_CHARS_REGEXP   = /[<>\/\u2028\u2029]/g;
 // Matches a script end tag (case-insensitive) for XSS protection: either a
@@ -238,8 +240,8 @@ module.exports = function serialize(obj, options) {
           serializedFn = escapeFunctionBody(serializedFn);
       }
 
-      // pure functions, example: {key: function() {}}
-      if(IS_PURE_FUNCTION.test(serializedFn)) {
+      // Function and class expressions can be emitted without method conversion.
+      if(IS_PURE_FUNCTION.test(serializedFn) || IS_CLASS.test(serializedFn)) {
           return serializedFn;
       }
 
