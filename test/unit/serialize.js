@@ -643,6 +643,16 @@ describe('serialize( obj )', function () {
             strictEqual(deserialized(), '</script>');
         });
 
+        it('should encode case-insensitive script close tags in function bodies', function () {
+            function fn() { return '</SCRIPT>'; }
+            var serialized = serialize(fn);
+
+            strictEqual(CLOSES_SCRIPT.test(serialized), false);
+
+            var deserialized; eval('deserialized = ' + serialized);
+            strictEqual(deserialized(), '</SCRIPT>');
+        });
+
         // A `</script` only ends the script element when the next character
         // is one the HTML tokenizer accepts as ending the tag name. Followed
         // by anything else it is emitted as text, so that is what must be
