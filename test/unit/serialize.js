@@ -643,6 +643,29 @@ describe('serialize( obj )', function () {
             strictEqual(deserialized(), '</script>');
         });
 
+        it('should encode mixed-case and delimiter variants in function bodies', function () {
+            // These escapes create actual LF, CR, and FF characters in each
+            // returned value. Serialization must keep the source safe and
+            // preserve those values after deserialization.
+            var payloads = [
+                '</sCrIpT>',
+                '</script/x>',
+                '</script\n>',
+                '</script\r>',
+                '</script\f>'
+            ];
+
+            payloads.forEach(function (payload) {
+                var fn = new Function('return ' + JSON.stringify(payload));
+                var serialized = serialize(fn);
+
+                strictEqual(CLOSES_SCRIPT.test(serialized), false);
+
+                var deserialized; eval('deserialized = ' + serialized);
+                strictEqual(deserialized(), payload);
+            });
+        });
+
         // A `</script` only ends the script element when the next character
         // is one the HTML tokenizer accepts as ending the tag name. Followed
         // by anything else it is emitted as text, so that is what must be
