@@ -928,6 +928,33 @@ describe('serialize( obj )', function () {
               '{"num":123,"str":"str"}'
             );
         });
+
+        it('should ignore options inherited from `Object.prototype`', function () {
+            var value = {
+                html: '</script><img src=x onerror=alert(1)>',
+                fn: function () { return '</script>'; },
+                map: new Map([['html', '</script>']])
+            };
+            var expected = serialize(value);
+            var expectedWithSpace = serialize(value, 2);
+
+            try {
+                Object.prototype.unsafe = true;
+                Object.prototype.isJSON = true;
+                Object.prototype.ignoreFunction = true;
+                Object.prototype.space = 2;
+
+                strictEqual(serialize(value), expected);
+                strictEqual(serialize(value, {}), expected);
+                strictEqual(serialize(value, true), expected);
+                strictEqual(serialize(value, 2), expectedWithSpace);
+            } finally {
+                delete Object.prototype.unsafe;
+                delete Object.prototype.isJSON;
+                delete Object.prototype.ignoreFunction;
+                delete Object.prototype.space;
+            }
+        });
     });
 
     describe('ignoring functions without changing the input', function () {
