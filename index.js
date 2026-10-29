@@ -119,6 +119,21 @@ function escapeFunctionBody(str) {
     return str;
 }
 
+// Keep in sync with the options read in `serialize()` below.
+var OPTION_NAMES = ['space', 'isJSON', 'unsafe', 'ignoreFunction'];
+
+// Copy only the options set on the object itself, so a value inherited from a
+// polluted `Object.prototype` (e.g. `unsafe`) can't turn off escaping.
+function ownOptions(options) {
+    var result = Object.create(null);
+    for (var i = 0; i < OPTION_NAMES.length; i++) {
+        if (Object.prototype.hasOwnProperty.call(options, OPTION_NAMES[i])) {
+            result[OPTION_NAMES[i]] = options[OPTION_NAMES[i]];
+        }
+    }
+    return result;
+}
+
 function generateUID() {
     var bytes = crypto.getRandomValues(new Uint8Array(UID_LENGTH));
     var result = '';
@@ -135,6 +150,8 @@ module.exports = function serialize(obj, options) {
     if (typeof options === 'number' || typeof options === 'string') {
         options = {space: options};
     }
+
+    options = ownOptions(options);
 
     var functions = [];
     var regexps   = [];
