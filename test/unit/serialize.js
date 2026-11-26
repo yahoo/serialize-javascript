@@ -570,6 +570,29 @@ describe('serialize( obj )', function () {
         });
     });
 
+    describe('negative zero', function () {
+        it('should serialize -0', function () {
+            strictEqual(serialize(-0), '-0');
+            strictEqual(serialize({ t: -0 }), '{"t":-0}');
+            strictEqual(serialize({ t: [-0, 0] }), '{"t":[-0,0]}');
+        });
+
+        it('should deserialize -0', function () {
+            var d = eval('(' + serialize(-0) + ')');
+            strictEqual(Object.is(d, -0), true);
+            var o = eval('(' + serialize({ t: -0 }) + ')');
+            strictEqual(Object.is(o.t, -0), true);
+            var a = eval('(' + serialize({ t: [-0, 0] }) + ')');
+            strictEqual(Object.is(a.t[0], -0), true);
+            strictEqual(Object.is(a.t[1], 0), true);
+        });
+
+        it('should not change the sign of regular zero', function () {
+            strictEqual(serialize(0), '0');
+            strictEqual(Object.is(eval(serialize(0)), 0), true);
+        });
+    });
+
     describe('BigInt', function () {
         it('should serialize BigInt', function () {
             var b = BigInt(9999);

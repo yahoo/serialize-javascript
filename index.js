@@ -9,7 +9,7 @@ See the accompanying LICENSE file for terms.
 // Generate an internal UID to make the regexp pattern harder to guess.
 var UID_LENGTH          = 16;
 var UID                 = generateUID();
-var PLACE_HOLDER_REGEXP = new RegExp('(\\\\)?"@__(F|R|D|M|S|A|U|I|B|L)-' + UID + '-(\\d+)__@"', 'g');
+var PLACE_HOLDER_REGEXP = new RegExp('(\\\\)?"@__(F|R|D|M|S|A|U|I|B|L|N)-' + UID + '-(\\d+)__@"', 'g');
 
 // Not global: `.test()` on a `/g` regexp advances `lastIndex`, so a second
 // call could start past a `[native code]` match and wrongly report a native
@@ -144,6 +144,7 @@ module.exports = function serialize(obj, options) {
     var arrays    = [];
     var undefs    = [];
     var infinities= [];
+    var negativeZeros = [];
     var bigInts = [];
     var urls = [];
 
@@ -151,14 +152,14 @@ module.exports = function serialize(obj, options) {
     // which are later replaced by their string representation.
     function replacer(key, value) {
 
-        if (!value && value !== undefined && value !== BigInt(0)) {
-            return value;
-        }
-
         // If the value is an object w/ a toJSON method, toJSON is called before
         // the replacer runs, so we use this[key] to get the non-toJSONed value.
         var origValue = this[key];
         var type = typeof origValue;
+
+        if (!value && value !== undefined && value !== BigInt(0) && !Object.is(origValue, -0)) {
+            return value;
+        }
 
         if (type === 'object') {
             if(origValue instanceof RegExp) {
@@ -203,6 +204,10 @@ module.exports = function serialize(obj, options) {
 
         if (type === 'number' && !isNaN(origValue) && !isFinite(origValue)) {
             return '@__I-' + UID + '-' + (infinities.push(origValue) - 1) + '__@';
+        }
+
+        if (type === 'number' && Object.is(origValue, -0)) {
+            return '@__N-' + UID + '-' + (negativeZeros.push(origValue) - 1) + '__@';
         }
 
         if (type === 'bigint') {
@@ -295,7 +300,7 @@ module.exports = function serialize(obj, options) {
         str = str.replace(UNSAFE_CHARS_REGEXP, escapeUnsafeChars);
     }
 
-    if (functions.length === 0 && regexps.length === 0 && dates.length === 0 && maps.length === 0 && sets.length === 0 && arrays.length === 0 && undefs.length === 0 && infinities.length === 0 && bigInts.length === 0 && urls.length === 0) {
+    if (functions.length === 0 && regexps.length === 0 && dates.length === 0 && maps.length === 0 && sets.length === 0 && arrays.length === 0 && undefs.length === 0 && infinities.length === 0 && negativeZeros.length === 0 && bigInts.length === 0 && urls.length === 0) {
         return str;
     }
 
@@ -347,6 +352,10 @@ module.exports = function serialize(obj, options) {
 
         if (type === 'I') {
             return infinities[valueIndex];
+        }
+
+        if (type === 'N') {
+            return '-0';
         }
 
         if (type === 'B') {
